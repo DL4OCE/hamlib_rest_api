@@ -1,0 +1,13 @@
+[Unit]
+Description=Hamlib rigctld Daemon für TRX %i
+After=network.target
+
+[Service]
+Type=simple
+# Wir rufen ein zentrales Start-Skript auf und übergeben die TRX-ID (%i)
+ExecStart=/usr/local/bin/rigctld-start.sh %i
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

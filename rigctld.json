@@ -1,0 +1,13 @@
+{
+  "1": {
+    "model": "1",
+    "device": "/dev/ttyUSB0",
+    "baud": "19200"
+  },
+  "2": {
+    "model": "1022",
+    "device": "/dev/ttyUSB1",
+    "baud": "9600"
+  }
+}
+
