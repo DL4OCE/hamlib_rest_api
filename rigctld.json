@@ -2,12 +2,14 @@
   "1": {
     "model": "1",
     "device": "/dev/ttyUSB0",
-    "baud": "19200"
+    "baud": "19200",
+    "ip_address": "127.0.0.1"
   },
   "2": {
     "model": "1022",
     "device": "/dev/ttyUSB1",
-    "baud": "9600"
+    "baud": "9600",
+    "ip_address": "127.0.0.1"
   }
 }
 
