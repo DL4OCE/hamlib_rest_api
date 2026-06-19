@@ -9,9 +9,9 @@ env:
 
 # Define the build targets
 builds:
-  - id: "hamlib-rest-api"
+  - id: "hamlib_rest_api"
     main: ./main.go
-    binary: hamlib-rest-api
+    binary: hamlib_rest_api
     
     # Target operating systems and architectures
     goos:
@@ -26,7 +26,7 @@ builds:
 
 # Define how the binaries are packed into archives (.tar.gz)
 archives:
-  - id: "hamlib-rest-api-archive"
+  - id: "hamlib_rest_api-archive"
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format: tar.gz
     
