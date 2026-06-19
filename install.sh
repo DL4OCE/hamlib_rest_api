@@ -16,7 +16,6 @@ $REAL_USER ALL=(ALL) NOPASSWD: /usr/bin/systemctl start rigctld@*, /usr/bin/syst
 EOF
 chmod 0440 "$SUDOERS_FILE"
 echo "Wrote sudoers file to $SUDOERS_FILE for user $REAL_USER"
-systemctl daemon-reload
 
 # install dependencies
 apt update && sudo apt install -y libhamlib-utils jq curl tar
@@ -52,12 +51,13 @@ sed -i "s/{{USER}}/$REAL_USER/g" "$API_SERVICE"
 systemctl daemon-reload
 systemctl enable hamlib_rest_api.service
 systemctl restart hamlib_rest_api.service
+echo "Installed, enabled and started hamlib_rest_api systemd service as $REAL_USER"
 
 # install multi-instance rigctld systemd service template
 cp rigctld@.service /etc/systemd/system/
 
 # stop and disable all running rigctld services
-echo "Stopping rigctld services..."
+echo "Stopping all running rigctld services..."
 systemctl list-units "rigctld@*" --plain --no-legend
 ACTIVE_SERVICES=$(systemctl list-units --all --plain --no-legend "rigctld@*" | awk '{print $1}')
 for service in $ACTIVE_SERVICES; do
