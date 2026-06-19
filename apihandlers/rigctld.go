@@ -14,7 +14,15 @@ type TransceiverConfig struct {
 	ID int `json:"id"`
 }
 
-// Hilfsfunktion 1: Prüft, ob die ID überhaupt in der JSON existiert
+type TransceiverExtendedConfig struct {
+	ID        int    `json:"id"`
+	Model     string `json:"model"`
+	Device    string `json:"device"`
+	Baud      string `json:"baud"`
+	Port      string `json:"port"`
+	IsRunning bool   `json:"is_running"`
+}
+
 func isTrxIDDefined(trxID int) bool {
 	jsonPath := "/etc/hamlib_rest_api/rigctld.json"
 	file, err := os.ReadFile(jsonPath)
@@ -33,27 +41,12 @@ func isTrxIDDefined(trxID int) bool {
 	return false
 }
 
-// func isRigctldInstanceValid(trxID int) bool {
-// 	serviceName := fmt.Sprintf("rigctld@%d.service", trxID)
-
-// 	cmd := exec.Command("systemctl", "show", "-p", "LoadState", serviceName)
-// 	output, err := cmd.Output()
-// 	if err != nil {
-// 		return false
-// 	}
-
-// 	return !strings.Contains(string(output), "LoadState=not-found")
-// }
-
 func isRigctldInstanceRunning(trxID int) bool {
 	serviceName := fmt.Sprintf("rigctld@%d.service", trxID)
 
-	// systemctl is-active liefert direkt den Status (z.B. "active", "inactive")
 	cmd := exec.Command("systemctl", "is-active", serviceName)
 	output, _ := cmd.Output()
 
-	// systemctl is-active gibt bei "inactive" einen Exit-Code != 0 zurück,
-	// daher ignorieren wir den err-Wert und prüfen rein den getrimmten Output.
 	status := strings.TrimSpace(string(output))
 	return status == "active"
 }
@@ -113,7 +106,6 @@ func handleStopRigctld(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Schauen, ob es vielleicht schon läuft
 	if !isRigctldInstanceRunning(trxID) {
 		writeJSON(w, http.StatusConflict, map[string]string{
 			"error": fmt.Sprintf("rigctld for TRX ID %d not running", trxID),
@@ -135,4 +127,32 @@ func handleStopRigctld(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"message": fmt.Sprintf("Service %s has been stopped, successfully", serviceName),
 	})
+}
+
+// GET /trxs -> list_rigs
+func HandleListRigs(w http.ResponseWriter, r *http.Request) {
+	jsonPath := "/etc/hamlib_rest_api/rigctld.json"
+
+	file, err := os.ReadFile(jsonPath)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Failed to read transceiver configuration: %v", err),
+		})
+		return
+	}
+
+	var trxs []TransceiverExtendedConfig
+	if err := json.Unmarshal(file, &trxs); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Failed to parse configuration JSON: %v", err),
+		})
+		return
+	}
+
+	for i := range trxs {
+		trxs[i].IsRunning = isRigctldInstanceRunning(trxs[i].ID)
+	}
+
+	// Return the enriched list
+	writeJSON(w, http.StatusOK, trxs)
 }
