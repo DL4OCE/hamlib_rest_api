@@ -112,8 +112,12 @@ func handleSetSplitFrequency(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Command to set split frequency (e.g., "I 145425000")
-	fullCmd := fmt.Sprintf("I %s", body["newValue"])
+	// fullCmd := fmt.Sprintf("I %s", body["newValue"])
+	// _, err := pollTrx(trxID, fullCmd)
+
+	fullCmd := fmt.Sprintf("F_VFO VFOB %s", body["newValue"])
 	_, err := pollTrx(trxID, fullCmd)
+
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return

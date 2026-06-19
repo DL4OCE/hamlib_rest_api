@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-// RegisterRoutes registriert zentral alle Endpunkte auf dem übergebenen Mux
 func RegisterRoutes(mux *http.ServeMux) {
 	// Core Routen
 	mux.HandleFunc("GET /trx/{trx_id}/frequency", handleGetFrequency)
@@ -34,15 +33,12 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /trx/{trx_id}/function/list", handleGetFunctionList)
 	mux.HandleFunc("GET /trx/{trx_id}/function/{param}", handleGetFunction)
 	mux.HandleFunc("POST /trx/{trx_id}/function/{param}", handleSetFunction)
-
 	mux.HandleFunc("GET /trx/{trx_id}/parameter/list", handleGetParameterList)
 	mux.HandleFunc("GET /trx/{trx_id}/parameter/{param}", handleGetParameter)
 	mux.HandleFunc("POST /trx/{trx_id}/parameter/{param}", handleSetParameter)
-
 	mux.HandleFunc("GET /trx/{trx_id}/scan/list", handleGetScanList)
 	mux.HandleFunc("GET /trx/{trx_id}/scan/{param}", handleGetScan)
 	mux.HandleFunc("POST /trx/{trx_id}/scan/{param}", handleSetScan)
-
 	mux.HandleFunc("GET /trx/{trx_id}/transceive/list", handleGetTransceiveList)
 	mux.HandleFunc("GET /trx/{trx_id}/transceive", handleGetTransceive)
 	mux.HandleFunc("POST /trx/{trx_id}/transceive", handleSetTransceive)
@@ -105,18 +101,11 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /trx/{trx_id}/voice_mem", handleSetVoiceMem)
 }
 
-// Helfer für JSON-Antworten (vorher writeJSON)
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
 }
-
-// // Deine bestehende rigctld-Kommunikation
-// func pollTrx(trxID int, cmd string) ([]string, error) {
-// 	// ... deine bestehende Implementierung ...
-// 	return []string{}, nil
-// }
 
 func pollTrx(trxID int, command string) (string, error) {
 	targetPort := 4532 + trxID
@@ -126,10 +115,8 @@ func pollTrx(trxID int, command string) (string, error) {
 	}
 	defer conn.Close()
 
-	// Befehl senden (mit Newline)
 	fmt.Fprintf(conn, "%s\n", strings.TrimSpace(command))
 
-	// Erste Zeile der Antwort lesen
 	resp, err := bufio.NewReader(conn).ReadString('\n')
 	if err != nil {
 		return "", err
