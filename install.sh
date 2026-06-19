@@ -29,14 +29,14 @@ case "$ARCH" in
     x86_64)  GOARCH="amd64" ;;
     aarch64) GOARCH="arm64" ;;
     armv7l)  GOARCH="arm" ;; # Fallback for older 32-bit Pis if compiled
-    *) echo "Fehler: Unbekannte Architektur $ARCH"; exit 1 ;;
+    *) echo "Error: unknown architecture $ARCH"; exit 1 ;;
 esac
 echo "Detected architecture: $ARCH, using GOARCH=$GOARCH"
 API_URL="https://api.github.com/repos/$REPO/releases/latest"
 DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name | contains(\"linux\") and contains(\"$GOARCH\") and endswith(\"tar.gz\")) | .browser_download_url")
 
 if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
-    echo "Fehler: Konnte kein passendes Linux-$GOARCH Release-Asset auf GitHub finden!"
+    echo "Error: Could not find a matching Linux-$GOARCH release asset on GitHub!"
     exit 1
 fi
 echo "Downloading latest binary release from $DOWNLOAD_URL ..."
