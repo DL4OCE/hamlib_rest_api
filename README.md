@@ -14,3 +14,10 @@ sudo ./install.sh
 sudo ./update_rigctld_services.sh
 
 ```
+
+| | |
+|---|---|
+| rigctld GUI | http://localhost:8080/gui/config_rigctld.html |
+|---|---|
+
+

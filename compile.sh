@@ -1,7 +1,7 @@
 #!/bin/bash
 go mod init hamlib_rest_api
-GOOS=linux GOARCH=amd64 go build -o build/hamlib-rest-api-linux64
-GOOS=linux GOARCH=arm64 go build -o build/hamlib-rest-api-rpi64
+GOOS=linux GOARCH=amd64 go build -o build/hamlib-rest-api
+GOOS=linux GOARCH=arm64 go build -o build/hamlib-rest-api
 
 #GOOS=windows GOARCH=amd64 go build -o build/hamlib-rest-api-windows-amd64.exe
 #GOOS=windows GOARCH=arm64 go build -o build/hamlib-rest-api-windows
