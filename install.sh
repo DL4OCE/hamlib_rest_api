@@ -23,7 +23,7 @@ apt update && sudo apt install -y libhamlib-utils jq curl tar
 
 # get latest binary release from github
 REPO="DL4OCE/hamlib_rest_api"
-BINARY_NAME="hamlib-rest-api"
+BINARY_NAME="hamlib_rest_api"
 INSTALL_DIR="/usr/local/bin"
 ARCH=$(uname -m)
 case "$ARCH" in
@@ -40,7 +40,7 @@ if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
     echo "Fehler: Konnte kein passendes Linux-$GOARCH Release-Asset auf GitHub finden!"
     exit 1
 fi
-echo "Downloading latest release from $DOWNLOAD_URL ..."
+echo "Downloading latest binary release from $DOWNLOAD_URL ..."
 curl -sL "$DOWNLOAD_URL" | tar -xz -C "$INSTALL_DIR" "$BINARY_NAME"
 chmod 755 "$INSTALL_DIR/$BINARY_NAME"
 echo "Installed $BINARY_NAME to $INSTALL_DIR/$BINARY_NAME"
@@ -64,4 +64,4 @@ done
 
 systemctl daemon-reload
 
-echo "Please modify rigctld.config according to your needs and run update_rigctld_services.sh"
+bash update_rigctld_services.sh

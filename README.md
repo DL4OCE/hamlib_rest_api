@@ -11,7 +11,7 @@ editor rigctld.json
 
 sudo chmod +x install.sh update_rigctld_services.sh
 sudo ./install.sh
-sudo ./update_rigctld_services.sh
+# sudo ./update_rigctld_services.sh
 
 ```
 
