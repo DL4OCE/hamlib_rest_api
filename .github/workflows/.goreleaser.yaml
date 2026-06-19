@@ -1,0 +1,51 @@
+# .goreleaser.yaml
+# Complete build and release automation configuration for hamlib_rest_api
+
+version: 2
+
+# Global environment variables before building
+env:
+  - CGO_ENABLED=0
+
+# Define the build targets
+builds:
+  - id: "hamlib-rest-api"
+    main: ./main.go
+    binary: hamlib-rest-api
+    
+    # Target operating systems and architectures
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+    # Optimization flags (strips debug symbols to reduce binary size)
+    ldflags:
+      - -s -w
+
+# Define how the binaries are packed into archives (.tar.gz)
+archives:
+  - id: "hamlib-rest-api-archive"
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    
+    # Files to include in the release archive along with the binary
+    files:
+      - README.md
+      - ToDos.md
+      - rigctld.json
+      - rigctld@.service
+
+# Generates a checksums.txt so downloaders (or tools) can verify file integrity
+checksum:
+  name_template: 'checksums.txt'
+
+# Configuration for the automatic changelog generation
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^typo'
+      - 'Merge pull request'
