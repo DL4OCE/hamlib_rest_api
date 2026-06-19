@@ -22,6 +22,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22' # Deine genutzte Go-Version
+          cache: false
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
