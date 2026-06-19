@@ -99,6 +99,10 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /trx/{trx_id}/power_state", handleGetPowerState)
 	mux.HandleFunc("POST /trx/{trx_id}/power_state", handleSetPowerState)
 	mux.HandleFunc("POST /trx/{trx_id}/voice_mem", handleSetVoiceMem)
+
+	// Systemctl Routen für rigctld Dienste
+	mux.HandleFunc("POST /trx/{trx_id}/start", handleStartRigctld)
+	mux.HandleFunc("POST /trx/{trx_id}/stop", handleStopRigctld)
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

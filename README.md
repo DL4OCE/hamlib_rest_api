@@ -1,6 +1,5 @@
 # hamlib_rest_api
 
-To install ***become root*** and use
 
 ```
 cd /tmp
@@ -10,8 +9,8 @@ cd hamlib-rest-api
 # Modify rigctld.config according to your needs:
 editor rigctld.json
 
-chmod +x install.sh update_rigctld_services.sh
-./install.sh
-./update_rigctld_services.sh
+sudo chmod +x install.sh update_rigctld_services.sh
+sudo ./install.sh
+sudo ./update_rigctld_services.sh
 
 ```
