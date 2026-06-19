@@ -45,10 +45,16 @@ curl -sL "$DOWNLOAD_URL" | tar -xz -C "$INSTALL_DIR" "$BINARY_NAME"
 chmod 755 "$INSTALL_DIR/$BINARY_NAME"
 echo "Installed $BINARY_NAME to $INSTALL_DIR/$BINARY_NAME"
 
+# install hamlib_rest_api systemd service
+API_SERVICE="/etc/systemd/system/hamlib_rest_api.service"
+cp hamlib_rest_api.service "$API_SERVICE"
+sed -i "s/{{USER}}/$REAL_USER/g" "$API_SERVICE"
+systemctl daemon-reload
+systemctl enable hamlib_rest_api.service
+systemctl restart hamlib_rest_api.service
 
 # install multi-instance rigctld systemd service template
 cp rigctld@.service /etc/systemd/system/
-mkdir -p /etc/hamlib_rest_api
 
 # stop and disable all running rigctld services
 echo "Stopping rigctld services..."
