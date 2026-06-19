@@ -33,17 +33,10 @@ if [ -z "$TRX_IDS" ]; then
 fi
 
 for id in $TRX_IDS; do
-    echo "  -> Aktiviere und starte Dienst für TRX ID: $id (rigctld@$id.service)"
+    echo "Activating and starting service for TRX ID: $id (rigctld@$id.service)"
     systemctl enable rigctld@"$id".service
     systemctl start rigctld@"$id".service
 done
 
 echo "=== rigctld services overview ==="
 systemctl list-units "rigctld@*" --plain --no-legend
-
-#cp hamlib_rest_api.service /etc/systemd/system
-#cp rigctld@.service /etc/systemd/system
-
-#systemctl enable --now rigctld@*.service
-# hamlib_rest_api.service
-
