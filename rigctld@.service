@@ -1,5 +1,5 @@
 [Unit]
-Description=Hamlib rigctld Daemon für TRX %i
+Description=Hamlib rigctld (TRX %i)
 After=network.target
 
 [Service]
