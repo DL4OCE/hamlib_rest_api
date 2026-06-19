@@ -1,0 +1,17 @@
+[Unit]
+Description=Hamlib REST API and web GUI service
+After=network.target
+
+[Service]
+Type=simple
+User={{USER}}
+Group={{USER}}
+ExecStart=/usr/local/bin/hamlib-rest-api
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hamlib-rest-api
+
+[Install]
+WantedBy=multi-user.target

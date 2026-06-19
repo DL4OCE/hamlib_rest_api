@@ -13,6 +13,7 @@ if [ ! -f "$JSON_FILE" ]; then
     exit 1
 fi
 
+mkdir -p /etc/hamlib_rest_api
 cp $JSON_FILE /etc/hamlib_rest_api/
 chmod 644 /etc/hamlib_rest_api/$JSON_FILE
 
