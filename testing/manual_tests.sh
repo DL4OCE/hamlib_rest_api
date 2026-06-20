@@ -3,17 +3,43 @@
 # ==============================================================================
 # CONFIGURATION
 # ==============================================================================
-BASE_URL="http://localhost:8080/trx/1"
+# === CHANGED === (Basis-URL für globale Endpunkte hinzugefügt)
+API_URL="http://localhost:8080"
+BASE_URL="$API_URL/trx/1"
 HEADER="Content-Type: application/json"
 
 echo "=== STARTING HAMLIB REST API MANUAL CURL TESTS ==="
-echo "Target URL: $BASE_URL"
+echo "Target API URL: $API_URL"
+echo "Target TRX URL: $BASE_URL"
 echo "--------------------------------------------------"
+
+# ==============================================================================
+# === NEW === SYSTEM & SERVICE MANAGEMENT (GLOBAL ENDPOINTS)
+# ==============================================================================
+echo -e "\n[0. System & Service Management]"
+
+echo "GET /trxs (List Transceivers):"
+curl -s -X GET "$API_URL/trxs"
+
+echo -e "\n\nGET /rotators (List Rotators):"
+curl -s -X GET "$API_URL/rotators"
+
+# === CHANGED === (Hier wird der angepasste /service/-Pfad für die Rigs getestet)
+echo -e "\n\nPOST /trx/1/service/stop (Stop TRX 1):"
+curl -s -X POST "$API_URL/trx/1/service/stop"
+echo -e "\nPOST /trx/1/service/start (Start TRX 1):"
+curl -s -X POST "$API_URL/trx/1/service/start"
+
+echo -e "\n\nPOST /rotator/1/service/stop (Stop Rotator 1):"
+curl -s -X POST "$API_URL/rotator/1/service/stop"
+echo -e "\nPOST /rotator/1/service/start (Start Rotator 1):"
+curl -s -X POST "$API_URL/rotator/1/service/start"
+
 
 # ==============================================================================
 # 1. CORE FUNCTIONS (FREQUENCY & MODE)
 # ==============================================================================
-echo -e "\n[1. Frequency & Mode]"
+echo -e "\n\n[1. Frequency & Mode]"
 
 echo "GET /frequency:"
 curl -s -X GET "$BASE_URL/frequency"
@@ -124,7 +150,7 @@ curl -s -X GET "$BASE_URL/tone/ctcss"
 echo -e "\nPOST /tone/ctcss:"
 curl -s -X POST "$BASE_URL/tone/ctcss" -H "$HEADER" -d '{"newValue":"88.5"}'
 
-echo -e "\n\nGET /tone/dcs:"
+echo -e "\n\nexport GET /tone/dcs:"
 curl -s -X GET "$BASE_URL/tone/dcs"
 echo -e "\nPOST /tone/dcs:"
 curl -s -X POST "$BASE_URL/tone/dcs" -H "$HEADER" -d '{"newValue":"023"}'
