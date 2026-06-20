@@ -1,0 +1,19 @@
+[
+  {
+    "id": 1,
+    "model": 601,
+    "device": "/dev/ttyUSB2",
+    "port": 4535,
+    "serial_speed": 9600
+  },
+  {
+    "id": 2,
+    "model": 1,
+    "device": "dummy",
+    "port": 4536,
+    "serial_speed": 0
+  }
+]
+
+
+

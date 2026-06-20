@@ -14,7 +14,7 @@ var webFiles embed.FS
 
 func main() {
 	mux := http.NewServeMux()
-	apihandlers.RegisterRoutes(mux)
+	apihandlers.RegisterRoutesRigctld(mux)
 
 	publicFiles, err := fs.Sub(webFiles, "gui")
 	if err != nil {

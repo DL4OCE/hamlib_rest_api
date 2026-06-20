@@ -13,6 +13,7 @@ rm -f "$SUDOERS_FILE"
 cat << EOF > "$SUDOERS_FILE"
 # Auto-generated sudoers file for hamlib_rest_api - DO NOT EDIT
 $REAL_USER ALL=(ALL) NOPASSWD: /usr/bin/systemctl start rigctld@*, /usr/bin/systemctl stop rigctld@*
+$REAL_USER ALL=(ALL) NOPASSWD: /usr/bin/systemctl start rotctld@*, /usr/bin/systemctl stop rotctld@*
 EOF
 chmod 0440 "$SUDOERS_FILE"
 echo "Wrote sudoers file to $SUDOERS_FILE for user $REAL_USER"
@@ -54,7 +55,8 @@ systemctl restart hamlib_rest_api.service
 echo "Installed, enabled and started hamlib_rest_api systemd service as $REAL_USER"
 
 # install multi-instance rigctld systemd service template
-cp rigctld@.service /etc/systemd/system/
+cp services/rigctld@.service /etc/systemd/system/
+cp services/rotctld@.service /etc/systemd/system/
 
 # stop and disable all running rigctld services
 echo "Stopping all running rigctld services..."

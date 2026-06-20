@@ -6,7 +6,7 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-JSON_FILE="rigctld.json"
+JSON_FILE="config/rigctld.json"
 
 if [ ! -f "$JSON_FILE" ]; then
     echo "Error: $JSON_FILE does not exist!"
