@@ -55,8 +55,7 @@ systemctl restart hamlib_rest_api.service
 echo "Installed, enabled and started hamlib_rest_api systemd service as $REAL_USER"
 
 # install multi-instance rigctld systemd service template
-cp services/rigctld@.service /etc/systemd/system/
-cp services/rotctld@.service /etc/systemd/system/
+cp services/rigctld@.service services/rotctld@.service /etc/systemd/system/
 
 # stop and disable all running rigctld services
 echo "Stopping all running rigctld services..."
@@ -70,6 +69,18 @@ for service in $ACTIVE_SERVICES; do
     fi
 done
 
+# stop and disable all running rotctld services
+echo "Stopping all running rotctld services..."
+systemctl list-units "rotctld@*" --plain --no-legend
+ACTIVE_SERVICES=$(systemctl list-units --all --plain --no-legend "rotctld@*" | awk '{print $1}')
+for service in $ACTIVE_SERVICES; do
+    if [ -n "$service" ]; then
+        echo "Stopping and deactivating $service ..."
+        systemctl stop "$service" || true
+        systemctl disable "$service" || true
+    fi
+done
+
 systemctl daemon-reload
 
-bash update_rigctld_services.sh
+bash update_hamlib_services.sh

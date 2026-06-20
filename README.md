@@ -10,10 +10,10 @@ cd hamlib_rest_api
 editor config/rigctld.json
 editor config/rotctld.json
 
-sudo chmod +x install.sh update_rigctld_services.sh
+sudo chmod +x install.sh update_hamlib_services.sh
 sudo ./install.sh
 # use
-# sudo ./update_rigctld_services.sh
+# sudo ./update_hamlib_services.sh
 # whenever you updated the config/rigctld.json!
 
 ```

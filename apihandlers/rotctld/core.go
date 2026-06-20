@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -53,6 +54,19 @@ func GetRotators() []RotatorConfig {
 	dst := make([]RotatorConfig, len(activeRotators))
 	copy(dst, activeRotators)
 	return dst
+}
+
+// GetRotctldStatus queries the live systemd controller state safely using the exit code
+func GetRotctldStatus(id int) string {
+	cmd := exec.Command("systemctl", "is-active", fmt.Sprintf("rotctld@%d.service", id))
+	output, _ := cmd.Output()
+
+	status := strings.TrimSpace(string(output))
+	if status == "active" {
+		return "RUNNING"
+	}
+	// "inactive", "activating", "deactivating" etc. maps to STOPPED
+	return "STOPPED"
 }
 
 // PollRotctlDaemon connects to the backend rotctld TCP port and sends a raw command
@@ -145,4 +159,71 @@ func HandleRawCommand(w http.ResponseWriter, r *http.Request) {
 		"command":    body.Command,
 		"response":   output,
 	})
+}
+
+// HandleListRotators maps to GET /rotators
+// Reads the configuration live from disk, matching the rigctld behavior
+func HandleListRotators(w http.ResponseWriter, r *http.Request) {
+	jsonPath := "/etc/hamlib_rest_api/rotctld.json"
+
+	// 1. Read file directly on request
+	file, err := os.ReadFile(jsonPath)
+	if err != nil {
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Failed to read rotator configuration: %v", err),
+		})
+		return
+	}
+
+	// 2. Parse into a local slice
+	var configs []RotatorConfig
+	if err := json.Unmarshal(file, &configs); err != nil {
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Failed to parse rotator configuration JSON: %v", err),
+		})
+		return
+	}
+
+	// 3. Enrich with systemd live status
+	type RotatorStatusResponse struct {
+		RotatorConfig
+		Status string `json:"status"`
+	}
+
+	response := []RotatorStatusResponse{}
+	for _, cfg := range configs {
+		response = append(response, RotatorStatusResponse{
+			RotatorConfig: cfg,
+			Status:        GetRotctldStatus(cfg.ID),
+		})
+	}
+
+	// 4. Return the enriched list (guaranteed to be at least "[]")
+	WriteJSON(w, http.StatusOK, response)
+}
+
+// HandleStartService maps to POST /rotator/{rotator_id}/start
+func HandleStartService(w http.ResponseWriter, r *http.Request) {
+	rotIDStr := r.PathValue("rotator_id")
+	serviceName := fmt.Sprintf("rotctld@%s.service", rotIDStr)
+
+	cmd := exec.Command("sudo", "systemctl", "start", serviceName)
+	if err := cmd.Run(); err != nil {
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " started"})
+}
+
+// HandleStopService maps to POST /rotator/{rotator_id}/stop
+func HandleStopService(w http.ResponseWriter, r *http.Request) {
+	rotIDStr := r.PathValue("rotator_id")
+	serviceName := fmt.Sprintf("rotctld@%s.service", rotIDStr)
+
+	cmd := exec.Command("sudo", "systemctl", "stop", serviceName)
+	if err := cmd.Run(); err != nil {
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " stopped"})
 }

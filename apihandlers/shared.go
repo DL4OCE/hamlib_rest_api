@@ -2,6 +2,7 @@ package apihandlers
 
 import (
 	"hamlib_rest_api/apihandlers/rigctld"
+	"hamlib_rest_api/apihandlers/rotctld"
 	"net/http"
 )
 
@@ -97,7 +98,38 @@ func RegisterRoutesRigctld(mux *http.ServeMux) {
 	mux.HandleFunc("POST /trx/{trx_id}/voice_mem", rigctld.HandleSetVoiceMem)
 
 	// Systemctl Routen für rigctld Dienste
-	mux.HandleFunc("POST /trx/{trx_id}/start", rigctld.HandleStartRigctld)
-	mux.HandleFunc("POST /trx/{trx_id}/stop", rigctld.HandleStopRigctld)
+	mux.HandleFunc("POST /trx/{trx_id}/service/start", rigctld.HandleStartRigctld)
+	mux.HandleFunc("POST /trx/{trx_id}/service/stop", rigctld.HandleStopRigctld)
 	mux.HandleFunc("GET /trxs", rigctld.HandleListRigs)
+}
+
+func RegisterRoutesRotctld(mux *http.ServeMux) {
+	mux.HandleFunc("GET /rotators", rotctld.HandleListRotators)
+	// Central raw command gateway (analogous to rigctld)
+	mux.HandleFunc("POST /rotator/{rotator_id}/command", rotctld.HandleRawCommand)
+
+	// Position and movement control
+	mux.HandleFunc("GET /rotator/{rotator_id}/position", rotctld.HandleGetPosition)
+	mux.HandleFunc("POST /rotator/{rotator_id}/position", rotctld.HandleSetPosition)
+	mux.HandleFunc("POST /rotator/{rotator_id}/park", rotctld.HandlePark)
+	mux.HandleFunc("POST /rotator/{rotator_id}/stop", rotctld.HandleStop)
+	mux.HandleFunc("POST /rotator/{rotator_id}/move", rotctld.HandleMove)
+	mux.HandleFunc("POST /rotator/{rotator_id}/reset", rotctld.HandleReset)
+
+	// Metadata and hardware state profiles
+	mux.HandleFunc("GET /rotator/{rotator_id}/info", rotctld.HandleGetInfo)
+	mux.HandleFunc("GET /rotator/{rotator_id}/status", rotctld.HandleGetStatus)
+	mux.HandleFunc("GET /rotator/{rotator_id}/state", rotctld.HandleGetState)
+	mux.HandleFunc("GET /rotator/{rotator_id}/capabilities", rotctld.HandleGetCapabilities)
+
+	// Advanced hardware level and auxiliary function mappings
+	mux.HandleFunc("GET /rotator/{rotator_id}/level/{level}", rotctld.HandleGetLevel)
+	mux.HandleFunc("POST /rotator/{rotator_id}/level/{level}", rotctld.HandleSetLevel)
+	mux.HandleFunc("GET /rotator/{rotator_id}/function/{function}", rotctld.HandleGetFunction)
+	mux.HandleFunc("POST /rotator/{rotator_id}/function/{function}", rotctld.HandleSetFunction)
+	mux.HandleFunc("GET /rotator/{rotator_id}/parameter/{parameter}", rotctld.HandleGetParameter)
+	mux.HandleFunc("POST /rotator/{rotator_id}/parameter/{parameter}", rotctld.HandleSetParameter)
+
+	mux.HandleFunc("POST /rotator/{rotator_id}/service/start", rotctld.HandleStartService)
+	mux.HandleFunc("POST /rotator/{rotator_id}/service/stop", rotctld.HandleStopService)
 }

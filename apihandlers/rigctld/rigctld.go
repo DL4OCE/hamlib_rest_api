@@ -56,19 +56,19 @@ func HandleStartRigctld(w http.ResponseWriter, r *http.Request) {
 	trxIDStr := r.PathValue("trx_id")
 	trxID, err := strconv.Atoi(trxIDStr)
 	if err != nil || trxID <= 0 {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid TRX ID"})
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid TRX ID"})
 		return
 	}
 
 	if !isTrxIDDefined(trxID) {
-		writeJSON(w, http.StatusNotFound, map[string]string{
+		WriteJSON(w, http.StatusNotFound, map[string]string{
 			"error": fmt.Sprintf("TRX ID %d not defined in rigctld.json", trxID),
 		})
 		return
 	}
 
 	if isRigctldInstanceRunning(trxID) {
-		writeJSON(w, http.StatusConflict, map[string]string{
+		WriteJSON(w, http.StatusConflict, map[string]string{
 			"error": fmt.Sprintf("rigctld for TRX ID %d is already running", trxID),
 		})
 		return
@@ -78,13 +78,13 @@ func HandleStartRigctld(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("sudo", "systemctl", "start", serviceName)
 
 	if err := cmd.Run(); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("Error starting %s: %v", serviceName, err),
 		})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{
+	WriteJSON(w, http.StatusOK, map[string]string{
 		"status":  "success",
 		"message": fmt.Sprintf("Service %s has been started, successfully", serviceName),
 	})
@@ -95,19 +95,19 @@ func HandleStopRigctld(w http.ResponseWriter, r *http.Request) {
 	trxIDStr := r.PathValue("trx_id")
 	trxID, err := strconv.Atoi(trxIDStr)
 	if err != nil || trxID <= 0 {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid TRX ID"})
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid TRX ID"})
 		return
 	}
 
 	if !isTrxIDDefined(trxID) {
-		writeJSON(w, http.StatusNotFound, map[string]string{
+		WriteJSON(w, http.StatusNotFound, map[string]string{
 			"error": fmt.Sprintf("TRX ID %d not defined in rigctld.json", trxID),
 		})
 		return
 	}
 
 	if !isRigctldInstanceRunning(trxID) {
-		writeJSON(w, http.StatusConflict, map[string]string{
+		WriteJSON(w, http.StatusConflict, map[string]string{
 			"error": fmt.Sprintf("rigctld for TRX ID %d not running", trxID),
 		})
 		return
@@ -117,13 +117,13 @@ func HandleStopRigctld(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("sudo", "systemctl", "stop", serviceName)
 
 	if err := cmd.Run(); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("Error stopping %s: %v", serviceName, err),
 		})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{
+	WriteJSON(w, http.StatusOK, map[string]string{
 		"status":  "success",
 		"message": fmt.Sprintf("Service %s has been stopped, successfully", serviceName),
 	})
@@ -135,7 +135,8 @@ func HandleListRigs(w http.ResponseWriter, r *http.Request) {
 
 	file, err := os.ReadFile(jsonPath)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
+		// Capital W for WriteJSON
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("Failed to read transceiver configuration: %v", err),
 		})
 		return
@@ -143,7 +144,8 @@ func HandleListRigs(w http.ResponseWriter, r *http.Request) {
 
 	var trxs []TransceiverExtendedConfig
 	if err := json.Unmarshal(file, &trxs); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
+		// Capital W for WriteJSON
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("Failed to parse configuration JSON: %v", err),
 		})
 		return
@@ -153,6 +155,11 @@ func HandleListRigs(w http.ResponseWriter, r *http.Request) {
 		trxs[i].IsRunning = isRigctldInstanceRunning(trxs[i].ID)
 	}
 
-	// Return the enriched list
-	writeJSON(w, http.StatusOK, trxs)
+	// Ensure trxs is never nil so it marshals to "[]" instead of "null"
+	if trxs == nil {
+		trxs = []TransceiverExtendedConfig{}
+	}
+
+	// Capital W for WriteJSON
+	WriteJSON(w, http.StatusOK, trxs)
 }
