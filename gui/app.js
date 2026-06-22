@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Fetches the rotctld json array along with their live systemd state
 async function loadRotatorServices() {
     try {
-        const response = await fetch('/rotators');
+        const response = await fetch('/api/v1/rotators');
         const rotators = await response.json();
         const tbody = document.querySelector("#rotator-table tbody");
         
@@ -50,7 +50,7 @@ async function loadRotatorServices() {
 async function toggleRotatorService(id, currentStatus) {
     const action = currentStatus === "RUNNING" ? "stop" : "start";
     try {
-        const response = await fetch(`/rotator/${id}/service/${action}`, { method: 'POST' });
+        const response = await fetch(`/api/v1/rotator/${id}/service/${action}`, { method: 'POST' });
         if (response.ok) {
             // Immediate reload after successful command execution
             loadRotatorServices();

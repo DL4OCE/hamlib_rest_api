@@ -45,7 +45,7 @@
         // Fetch and render the transceiver list
         async function loadRigs() {
             try {
-                const response = await fetch('/trxs');
+                const response = await fetch('/api/v1/devices/rigs');
                 if (!response.ok) throw new Error('Network response was not ok');
                 const rigs = await response.json();
                 
@@ -84,7 +84,7 @@
 
         async function controlRig(id, action) {
             try {
-                const response = await fetch(`/trx/${id}/service/${action}`, { 
+                const response = await fetch(`/api/v1/devices/rigs/${id}/service/${action}`, { 
                     method: 'POST' 
                 });
                 
@@ -104,7 +104,7 @@
 
         async function loadRotators() {
             try {
-                const response = await fetch('/rotators');
+                const response = await fetch('/api/v1/devices/rotators');
                 if (!response.ok) throw new Error('Network response was not ok');
                 const rotators = await response.json();
                 
@@ -146,7 +146,7 @@
 
         async function controlRotator(id, action) {
             try {
-                const response = await fetch(`/rotator/${id}/service/${action}`, { 
+                const response = await fetch(`/api/v1/devices/rotators/${id}/service/${action}`, { 
                     method: 'POST' 
                 });
                 const result = await response.json();
