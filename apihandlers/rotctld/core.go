@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // // RotatorConfig holds the setup data for a single rotator daemon
@@ -97,12 +98,12 @@ func GetRotctldStatus(id int) string {
 	return "STOPPED"
 }
 
-// PollRotctlDaemon connects to the backend rotctld TCP port and sends a raw command
 func PollRotctlDaemon(rotID int, command string) ([]string, error) {
 	rots, err := GetRotators()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get rotators: %w", err)
 	}
+
 	var rot *RotatorConfig
 	for _, r := range rots {
 		if r.ID == rotID {
@@ -110,17 +111,10 @@ func PollRotctlDaemon(rotID int, command string) ([]string, error) {
 			break
 		}
 	}
-	// for _, r := range GetRotators() {
-	// 	if r.ID == rotID {
-	// 		rot = &r
-	// 		break
-	// 	}
-	// }
 	if rot == nil {
 		return nil, fmt.Errorf("rotator with id=%d not defined", rotID)
 	}
 
-	// Establish TCP network connection to the respective rotctld daemon
 	address := net.JoinHostPort("127.0.0.1", strconv.Itoa(rot.Port))
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
@@ -128,29 +122,36 @@ func PollRotctlDaemon(rotID int, command string) ([]string, error) {
 	}
 	defer conn.Close()
 
-	// Ensure the command ends with a newline character as required by hamlib
-	if !strings.HasSuffix(command, "\n") {
-		command += "\n"
-	}
-
-	_, err = conn.Write([]byte(command))
+	_, err = fmt.Fprintf(conn, "%s\n", strings.TrimSpace(command))
 	if err != nil {
-		return nil, fmt.Errorf("failed to write command to daemon: %w", err)
+		return nil, fmt.Errorf("failed to write command: %w", err)
 	}
 
 	var lines []string
 	scanner := bufio.NewScanner(conn)
-	for scanner.Scan() {
-		line := scanner.Text()
-		lines = append(lines, line)
 
-		// Break early for non-dump commands since single commands return immediate results
-		if !strings.HasPrefix(command, "dump_state") && !strings.HasPrefix(command, "_") {
+	for {
+		conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
+
+		if !scanner.Scan() {
 			break
 		}
+
+		text := strings.TrimSpace(scanner.Text())
+		if text == "" {
+			continue
+		}
+
+		if strings.HasPrefix(text, "RPRT") {
+			break
+		}
+
+		lines = append(lines, text)
 	}
 
-	if err := scanner.Err(); err != nil {
+	conn.SetReadDeadline(time.Time{})
+
+	if err := scanner.Err(); err != nil && !os.IsTimeout(err) {
 		return nil, fmt.Errorf("error reading response from daemon: %w", err)
 	}
 

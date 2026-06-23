@@ -31,9 +31,9 @@ test_get_api "$ROT_URL/position"
 test_post_api "$ROT_URL/position" '{"azimuth":"180", "elevation":"45"}'
 
 # === Metadata ===
-# test_get_api "$ROT_URL/info"
+test_get_api "$ROT_URL/info"
 test_get_api "$ROT_URL/status"
-# test_get_api "$ROT_URL/state"
+test_get_api "$ROT_URL/state"
 test_get_api "$ROT_URL/capabilities"
 
 # === DYNAMIC PARAMETER TESTS (LOOPED) ===
