@@ -10,18 +10,9 @@ import (
 	"strings"
 )
 
-// type TransceiverConfig struct {
-// 	ID int `json:"id"`
-// }
-
-// type TransceiverExtendedConfig struct {
-// 	ID        int    `json:"id"`
-// 	Model     string `json:"model"`
-// 	Device    string `json:"device"`
-// 	Baud      string `json:"baud"`
-// 	Port      string `json:"port"`
-// 	IsRunning bool   `json:"is_running"`
-// }
+type ValuePayload struct {
+	NewValue string `json:"newValue"`
+}
 
 type TransceiverConfig struct {
 	ID            int    `json:"id"`
@@ -29,7 +20,7 @@ type TransceiverConfig struct {
 	Device        string `json:"device"`
 	Baudrate      int    `json:"baudrate"`
 	Port          int    `json:"port"`
-	ServiceStatus string `json:"status"` // Wird beim Laden des Zustands gesetzt
+	ServiceStatus string `json:"status"`
 }
 
 func isTrxIDDefined(trxID int) bool {
@@ -52,116 +43,75 @@ func isTrxIDDefined(trxID int) bool {
 
 func isRigctldInstanceRunning(trxID int) bool {
 	serviceName := fmt.Sprintf("rigctld@%d.service", trxID)
-
 	cmd := exec.Command("systemctl", "is-active", serviceName)
 	output, _ := cmd.Output()
-
-	status := strings.TrimSpace(string(output))
-	return status == "active"
+	return strings.TrimSpace(string(output)) == "active"
 }
 
-// POST /trx/{trx_id}/start
+// --- Service Lifecycle Management ---
+
 func HandleStartRigctld(w http.ResponseWriter, r *http.Request) {
-	trxIDStr := r.PathValue("trx_id")
-	trxID, err := strconv.Atoi(trxIDStr)
+	trxID, err := strconv.Atoi(r.PathValue("trx_id"))
 	if err != nil || trxID <= 0 {
 		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid TRX ID"})
 		return
 	}
 
 	if !isTrxIDDefined(trxID) {
-		WriteJSON(w, http.StatusNotFound, map[string]string{
-			"error": fmt.Sprintf("TRX ID %d not defined in rigctld.json", trxID),
-		})
+		WriteJSON(w, http.StatusNotFound, map[string]string{"error": "TRX ID not defined"})
 		return
 	}
 
 	if isRigctldInstanceRunning(trxID) {
-		WriteJSON(w, http.StatusConflict, map[string]string{
-			"error": fmt.Sprintf("rigctld for TRX ID %d is already running", trxID),
-		})
+		WriteJSON(w, http.StatusConflict, map[string]string{"error": "Service already running"})
 		return
 	}
 
 	serviceName := fmt.Sprintf("rigctld@%d.service", trxID)
-	cmd := exec.Command("sudo", "systemctl", "start", serviceName)
-
-	if err := cmd.Run(); err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Error starting %s: %v", serviceName, err),
-		})
+	if err := exec.Command("sudo", "systemctl", "start", serviceName).Run(); err != nil {
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to start service"})
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{
-		"status":  "success",
-		"message": fmt.Sprintf("Service %s has been started, successfully", serviceName),
-	})
+	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " started"})
 }
 
-// POST /trx/{trx_id}/stop
 func HandleStopRigctld(w http.ResponseWriter, r *http.Request) {
-	trxIDStr := r.PathValue("trx_id")
-	trxID, err := strconv.Atoi(trxIDStr)
+	trxID, err := strconv.Atoi(r.PathValue("trx_id"))
 	if err != nil || trxID <= 0 {
 		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid TRX ID"})
 		return
 	}
 
-	if !isTrxIDDefined(trxID) {
-		WriteJSON(w, http.StatusNotFound, map[string]string{
-			"error": fmt.Sprintf("TRX ID %d not defined in rigctld.json", trxID),
-		})
-		return
-	}
-
 	if !isRigctldInstanceRunning(trxID) {
-		WriteJSON(w, http.StatusConflict, map[string]string{
-			"error": fmt.Sprintf("rigctld for TRX ID %d not running", trxID),
-		})
+		WriteJSON(w, http.StatusConflict, map[string]string{"error": "Service not running"})
 		return
 	}
 
 	serviceName := fmt.Sprintf("rigctld@%d.service", trxID)
-	cmd := exec.Command("sudo", "systemctl", "stop", serviceName)
-
-	if err := cmd.Run(); err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Error stopping %s: %v", serviceName, err),
-		})
+	if err := exec.Command("sudo", "systemctl", "stop", serviceName).Run(); err != nil {
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to stop service"})
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{
-		"status":  "success",
-		"message": fmt.Sprintf("Service %s has been stopped, successfully", serviceName),
-	})
+	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " stopped"})
 }
 
-// GET /trxs -> list_rigs
 func HandleListRigs(w http.ResponseWriter, r *http.Request) {
 	jsonPath := "/etc/hamlib_rest_api/rigctld.json"
-
 	file, err := os.ReadFile(jsonPath)
 	if err != nil {
-		// Capital W for WriteJSON
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Failed to read transceiver configuration: %v", err),
-		})
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read config"})
 		return
 	}
 
 	var trxs []TransceiverConfig
 	if err := json.Unmarshal(file, &trxs); err != nil {
-		// Capital W for WriteJSON
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Failed to parse configuration JSON: %v", err),
-		})
+		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to parse config"})
 		return
 	}
 
 	for i := range trxs {
-		// trxs[i].IsRunning = isRigctldInstanceRunning(trxs[i].ID)
 		if isRigctldInstanceRunning(trxs[i].ID) {
 			trxs[i].ServiceStatus = "running"
 		} else {
@@ -169,11 +119,9 @@ func HandleListRigs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Ensure trxs is never nil so it marshals to "[]" instead of "null"
 	if trxs == nil {
 		trxs = []TransceiverConfig{}
 	}
 
-	// Capital W for WriteJSON
 	WriteJSON(w, http.StatusOK, trxs)
 }

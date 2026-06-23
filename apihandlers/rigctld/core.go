@@ -10,21 +10,63 @@ import (
 	"strings"
 )
 
-func pollTrx(trxID int, command string) (string, error) {
+func pollTrx(trxID int, command string) ([]string, error) {
 	targetPort := 4532 + trxID
 	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", targetPort))
 	if err != nil {
-		return "", fmt.Errorf("Could not reach rigctld on port %d", targetPort)
+		return nil, fmt.Errorf("Could not reach rigctld on port %d", targetPort)
 	}
 	defer conn.Close()
 
-	fmt.Fprintf(conn, "%s\n", strings.TrimSpace(command))
-
-	resp, err := bufio.NewReader(conn).ReadString('\n')
+	_, err = fmt.Fprintf(conn, "%s\n", strings.TrimSpace(command))
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("failed to send command: %w", err)
 	}
-	return strings.TrimSpace(resp), nil
+
+	var lines []string
+	scanner := bufio.NewScanner(conn)
+
+	cmdPrefix := strings.Split(command, " ")[0]
+	isDynamic := cmdPrefix == "get_modes" || cmdPrefix == "dump_state" || cmdPrefix == "get_rig_info"
+
+	expected_lines := 1
+	switch cmdPrefix {
+	case "m", "s", "x":
+		expected_lines = 2
+	case "k":
+		expected_lines = 3
+	}
+
+	for scanner.Scan() {
+		// lines = append(lines, strings.TrimSpace(scanner.Text()))
+
+		text := strings.TrimSpace(scanner.Text())
+		if text == "RPRT 0" {
+			if len(lines) == 0 {
+				break
+			}
+			continue
+		}
+		if text != "" {
+			lines = append(lines, text)
+		}
+
+		if !isDynamic && len(lines) >= expected_lines {
+			break
+		}
+	}
+
+	if err != nil {
+		fmt.Printf("DEBUG: pollTrx error: %v\n", err)
+	} else {
+		fmt.Printf("DEBUG: Received %d lines: %v\n", len(lines), lines)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading response: %w", err)
+	}
+
+	return lines, nil
 }
 
 func WriteJSON(w http.ResponseWriter, status int, data any) {
@@ -35,56 +77,65 @@ func WriteJSON(w http.ResponseWriter, status int, data any) {
 
 // GET /trx/{trx_id}/frequency -> get_trx_frequency
 func HandleGetFrequency(w http.ResponseWriter, r *http.Request) {
-	trxID, _ := strconv.Atoi(r.PathValue("trx_id")) // ID aus der URL holen
+	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 
-	rawFreq, err := pollTrx(trxID, "f")
-	if err != nil {
-		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": err.Error()})
+	output, err := pollTrx(trxID, "f")
+	if err != nil || len(output) < 1 {
+		errMsg := "Failed to get frequency from rigctld"
+		if err != nil {
+			errMsg = err.Error()
+		}
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": errMsg})
 		return
 	}
-
-	// build_response() Äquivalent als Map
-	WriteJSON(w, http.StatusOK, map[string]string{"freq": rawFreq})
+	WriteJSON(w, http.StatusOK, map[string]string{"freq": output[0]})
 }
 
 // POST /trx/{trx_id}/frequency -> set_trx_frequency
 func HandleSetFrequency(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
-
-	// RequestBody dynamisch in eine Map dekodieren (json_decode)
-	var body map[string]string
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["newValue"] == "" {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Ungültiger Body"})
+	// var body map[string]string
+	var body struct {
+		NewValue string `json:"newValue"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.NewValue == "" {
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON body"})
 		return
 	}
-
-	// Befehl an pollTrx übergeben (z.B. "F 145425000")
-	_, err := pollTrx(trxID, "F "+body["newValue"])
+	_, err := pollTrx(trxID, "F "+body.NewValue)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-
-	// Leere Erfolgsantwort senden (array())
 	WriteJSON(w, http.StatusOK, map[string]any{})
 }
-
-// GET /trx/{trx_id}/mode -> get_trx_mode
 
 // GET /trx/{trx_id}/mode -> get_trx_mode
 func HandleGetMode(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 
 	output, err := pollTrx(trxID, "m")
+
+	// //
+	// if err != nil {
+	// 	fmt.Printf("DEBUG: pollTrx error: %v\n", err)
+	// } else {
+	// 	fmt.Printf("DEBUG: Received %d lines: %v\n", len(output), output)
+	// }
+	// //
+
 	if err != nil || len(output) < 2 {
-		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response from rigctld"})
+		errMsg := "Failed to get mode"
+		if err != nil {
+			errMsg = err.Error()
+		}
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": errMsg})
 		return
 	}
 
-	// FIX: Explicitly cast the outputs to string if they are treated as bytes/runes
 	WriteJSON(w, http.StatusOK, map[string]string{
-		"mode":     string(output[0]),
-		"passband": string(output[1]),
+		"mode":     output[0],
+		"passband": output[1],
 	})
 }
 
@@ -92,22 +143,22 @@ func HandleGetMode(w http.ResponseWriter, r *http.Request) {
 func HandleSetMode(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 
-	// Decode incoming JSON dynamically (json_decode)
-	var body map[string]string
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["mode"] == "" || body["passband"] == "" {
+	var body struct {
+		Mode     string `json:"mode"`
+		Passband string `json:"passband"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Mode == "" || body.Passband == "" {
 		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or incomplete body JSON"})
 		return
 	}
 
-	// Construct and send command (e.g., "M LSB 2400")
-	fullCmd := fmt.Sprintf("M %s %s", body["mode"], body["passband"])
+	fullCmd := fmt.Sprintf("M %s %s", body.Mode, body.Passband)
 	_, err := pollTrx(trxID, fullCmd)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
-	// Return empty response array()
 	WriteJSON(w, http.StatusOK, map[string]any{})
 }
 
@@ -117,33 +168,27 @@ func HandleGetSplitFrequency(w http.ResponseWriter, r *http.Request) {
 
 	output, err := pollTrx(trxID, "i")
 	if err != nil || len(output) < 1 {
-		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response from rigctld"})
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
 
-	// Returns the split frequency (qrg) from the first line
-	WriteJSON(w, http.StatusOK, map[string]string{
-		"qrg": string(output[0]),
-	})
+	WriteJSON(w, http.StatusOK, map[string]string{"qrg": output[0]})
 }
 
 // POST /trx/{trx_id}/split_frequency -> set_trx_split_frequency
 func HandleSetSplitFrequency(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 
-	var body map[string]string
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["newValue"] == "" {
+	var body struct {
+		NewValue string `json:"newValue"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.NewValue == "" {
 		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or incomplete body JSON"})
 		return
 	}
 
-	// Command to set split frequency (e.g., "I 145425000")
-	// fullCmd := fmt.Sprintf("I %s", body["newValue"])
-	// _, err := pollTrx(trxID, fullCmd)
-
-	fullCmd := fmt.Sprintf("F_VFO VFOB %s", body["newValue"])
+	fullCmd := fmt.Sprintf("F_VFO VFOB %s", body.NewValue)
 	_, err := pollTrx(trxID, fullCmd)
-
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -158,14 +203,13 @@ func HandleGetSplitMode(w http.ResponseWriter, r *http.Request) {
 
 	output, err := pollTrx(trxID, "x")
 	if err != nil || len(output) < 2 {
-		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response from rigctld"})
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
 
-	// Line 1: Split Mode, Line 2: Split Passband
 	WriteJSON(w, http.StatusOK, map[string]string{
-		"mode":     string(output[0]),
-		"passband": string(output[1]),
+		"mode":     output[0],
+		"passband": output[1],
 	})
 }
 
@@ -173,14 +217,16 @@ func HandleGetSplitMode(w http.ResponseWriter, r *http.Request) {
 func HandleSetSplitMode(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 
-	var body map[string]string
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["mode"] == "" || body["passband"] == "" {
+	var body struct {
+		Mode     string `json:"mode"`
+		Passband string `json:"passband"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Mode == "" || body.Passband == "" {
 		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or incomplete body JSON"})
 		return
 	}
 
-	// Command to set split mode and passband (e.g., "X LSB 2700")
-	fullCmd := fmt.Sprintf("X %s %s", body["mode"], body["passband"])
+	fullCmd := fmt.Sprintf("X %s %s", body.Mode, body.Passband)
 	_, err := pollTrx(trxID, fullCmd)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -196,15 +242,14 @@ func HandleGetSplitFrequencyMode(w http.ResponseWriter, r *http.Request) {
 
 	output, err := pollTrx(trxID, "k")
 	if err != nil || len(output) < 3 {
-		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response from rigctld"})
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
 
-	// Line 1: Frequency, Line 2: Mode, Line 3: Passband
 	WriteJSON(w, http.StatusOK, map[string]string{
-		"frequency": string(output[0]),
-		"mode":      string(output[1]),
-		"passband":  string(output[2]),
+		"frequency": output[0],
+		"mode":      output[1],
+		"passband":  output[2],
 	})
 }
 
@@ -212,14 +257,17 @@ func HandleGetSplitFrequencyMode(w http.ResponseWriter, r *http.Request) {
 func HandleSetSplitFrequencyMode(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 
-	var body map[string]string
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["frequency"] == "" || body["mode"] == "" || body["passband"] == "" {
+	var body struct {
+		Frequency string `json:"frequency"`
+		Mode      string `json:"mode"`
+		Passband  string `json:"passband"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Frequency == "" || body.Mode == "" || body.Passband == "" {
 		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or incomplete body JSON"})
 		return
 	}
 
-	// Command to set all three split parameters (e.g., "K 145425000 LSB 2700")
-	fullCmd := fmt.Sprintf("K %s %s %s", body["frequency"], body["mode"], body["passband"])
+	fullCmd := fmt.Sprintf("K %s %s %s", body.Frequency, body.Mode, body.Passband)
 	_, err := pollTrx(trxID, fullCmd)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -235,14 +283,13 @@ func HandleGetSplitVFO(w http.ResponseWriter, r *http.Request) {
 
 	output, err := pollTrx(trxID, "s")
 	if err != nil || len(output) < 2 {
-		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response from rigctld"})
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
 
-	// Line 1: Split Mode (0 or 1), Line 2: TX VFO
 	WriteJSON(w, http.StatusOK, map[string]string{
-		"split_mode": string(output[0]),
-		"tx_vfo":     string(output[1]),
+		"split_mode": output[0],
+		"tx_vfo":     output[1],
 	})
 }
 
@@ -250,14 +297,16 @@ func HandleGetSplitVFO(w http.ResponseWriter, r *http.Request) {
 func HandleSetSplitVFO(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 
-	var body map[string]string
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["split_mode"] == "" || body["tx_vfo"] == "" {
+	var body struct {
+		SplitMode string `json:"split_mode"`
+		TxVFO     string `json:"tx_vfo"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SplitMode == "" || body.TxVFO == "" {
 		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or incomplete body JSON"})
 		return
 	}
 
-	// Command: S <Split Mode> <TX VFO> (e.g., "S 1 VFOB")
-	fullCmd := fmt.Sprintf("S %s %s", body["split_mode"], body["tx_vfo"])
+	fullCmd := fmt.Sprintf("S %s %s", body.SplitMode, body.TxVFO)
 	_, err := pollTrx(trxID, fullCmd)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})

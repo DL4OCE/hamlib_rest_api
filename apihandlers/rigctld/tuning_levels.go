@@ -8,104 +8,74 @@ import (
 	"strings"
 )
 
-// GET /trx/{trx_id}/tuningstep -> get_trx_tuningstep
+// --- Tuning & Level ---
+
 func HandleGetTuningStep(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
-
 	output, err := pollTrx(trxID, "n")
-	if err != nil || len(output) < 1 {
-		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response from rigctld"})
+	if err != nil || len(output) == 0 {
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
-
-	WriteJSON(w, http.StatusOK, map[string]string{
-		"tuningstep": string(output[0]),
-	})
+	WriteJSON(w, http.StatusOK, map[string]string{"tuningstep": output[0]})
 }
 
-// POST /trx/{trx_id}/tuningstep -> set_trx_tuningstep
 func HandleSetTuningStep(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
-
-	var body map[string]string
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["newValue"] == "" {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or incomplete body JSON"})
+	var body ValuePayload
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.NewValue == "" {
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON body"})
 		return
 	}
-
-	fullCmd := fmt.Sprintf("N %s", body["newValue"])
-	_, err := pollTrx(trxID, fullCmd)
+	_, err := pollTrx(trxID, fmt.Sprintf("N %s", body.NewValue))
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-
 	WriteJSON(w, http.StatusOK, map[string]any{})
 }
 
-// GET /trx/{trx_id}/level/list -> get_trx_level_list
 func HandleGetLevelList(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
-
 	output, err := pollTrx(trxID, "l ?")
-	if err != nil || len(output) < 1 {
-		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response from rigctld"})
+	if err != nil || len(output) == 0 {
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
-
-	// Explode by space equivalent: strings.Fields automatically splits by whitespace and removes empty tokens
-	capabilities := strings.Fields(string(output[0]))
-
-	WriteJSON(w, http.StatusOK, map[string][]string{
-		"capabilities": capabilities,
-	})
+	WriteJSON(w, http.StatusOK, map[string][]string{"levels": strings.Fields(output[0])})
 }
 
-// GET /trx/{trx_id}/level/{level_param} -> get_trx_level
 func HandleGetLevel(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	levelParam := r.PathValue("level_param")
-
 	if levelParam == "" {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing level parameter"})
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing parameter"})
 		return
 	}
-
-	fullCmd := fmt.Sprintf("l %s", levelParam)
-	output, err := pollTrx(trxID, fullCmd)
-	if err != nil || len(output) < 1 {
-		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response from rigctld"})
+	output, err := pollTrx(trxID, fmt.Sprintf("l %s", levelParam))
+	if err != nil || len(output) == 0 {
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
-
-	WriteJSON(w, http.StatusOK, map[string]string{
-		"level": string(output[0]),
-	})
+	WriteJSON(w, http.StatusOK, map[string]string{"level": output[0]})
 }
 
-// POST /trx/{trx_id}/level/{level_param} -> set_trx_level
 func HandleSetLevel(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	levelParam := r.PathValue("level_param")
-
 	if levelParam == "" {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing level parameter"})
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing parameter"})
 		return
 	}
-
-	var body map[string]string
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["newValue"] == "" {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or incomplete body JSON"})
+	var body ValuePayload
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.NewValue == "" {
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON body"})
 		return
 	}
-
-	// Command: L <Level Name> <Value> (e.g., "L AF STRENGTH")
-	fullCmd := fmt.Sprintf("L %s %s", levelParam, body["newValue"])
-	_, err := pollTrx(trxID, fullCmd)
+	_, err := pollTrx(trxID, fmt.Sprintf("L %s %s", levelParam, body.NewValue))
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-
 	WriteJSON(w, http.StatusOK, map[string]any{})
 }
