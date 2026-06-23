@@ -2,6 +2,8 @@ package apihandlers
 
 import (
 	"encoding/json"
+	"hamlib_rest_api/apihandlers/rigctld"
+	"hamlib_rest_api/apihandlers/rotctld"
 	"net/http"
 	"os"
 )
@@ -21,20 +23,17 @@ func HandleListDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Parsen
-	var rigs []RigInfo
-	var rots []RotatorInfo
+	var rigs []rigctld.TransceiverConfig
+	var rots []rotctld.RotatorConfig
 
 	json.Unmarshal(rigData, &rigs)
 	json.Unmarshal(rotData, &rots)
 
-	// 3. Zusammenführen
 	response := DeviceList{
 		Rigs:     rigs,
 		Rotators: rots,
 	}
 
-	// 4. Senden
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

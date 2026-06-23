@@ -14,7 +14,7 @@ func pollTrx(trxID int, command string) (string, error) {
 	targetPort := 4532 + trxID
 	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", targetPort))
 	if err != nil {
-		return "", fmt.Errorf("rigctld auf Port %d nicht erreichbar", targetPort)
+		return "", fmt.Errorf("Could not reach rigctld on port %d", targetPort)
 	}
 	defer conn.Close()
 

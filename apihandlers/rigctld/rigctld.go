@@ -10,17 +10,26 @@ import (
 	"strings"
 )
 
-type TransceiverConfig struct {
-	ID int `json:"id"`
-}
+// type TransceiverConfig struct {
+// 	ID int `json:"id"`
+// }
 
-type TransceiverExtendedConfig struct {
-	ID        int    `json:"id"`
-	Model     string `json:"model"`
-	Device    string `json:"device"`
-	Baud      string `json:"baud"`
-	Port      string `json:"port"`
-	IsRunning bool   `json:"is_running"`
+// type TransceiverExtendedConfig struct {
+// 	ID        int    `json:"id"`
+// 	Model     string `json:"model"`
+// 	Device    string `json:"device"`
+// 	Baud      string `json:"baud"`
+// 	Port      string `json:"port"`
+// 	IsRunning bool   `json:"is_running"`
+// }
+
+type TransceiverConfig struct {
+	ID            int    `json:"id"`
+	Model         int    `json:"model"`
+	Device        string `json:"device"`
+	Baudrate      int    `json:"baudrate"`
+	Port          int    `json:"port"`
+	ServiceStatus string `json:"status"` // Wird beim Laden des Zustands gesetzt
 }
 
 func isTrxIDDefined(trxID int) bool {
@@ -142,7 +151,7 @@ func HandleListRigs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var trxs []TransceiverExtendedConfig
+	var trxs []TransceiverConfig
 	if err := json.Unmarshal(file, &trxs); err != nil {
 		// Capital W for WriteJSON
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{
@@ -152,12 +161,17 @@ func HandleListRigs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := range trxs {
-		trxs[i].IsRunning = isRigctldInstanceRunning(trxs[i].ID)
+		// trxs[i].IsRunning = isRigctldInstanceRunning(trxs[i].ID)
+		if isRigctldInstanceRunning(trxs[i].ID) {
+			trxs[i].ServiceStatus = "running"
+		} else {
+			trxs[i].ServiceStatus = "stopped"
+		}
 	}
 
 	// Ensure trxs is never nil so it marshals to "[]" instead of "null"
 	if trxs == nil {
-		trxs = []TransceiverExtendedConfig{}
+		trxs = []TransceiverConfig{}
 	}
 
 	// Capital W for WriteJSON

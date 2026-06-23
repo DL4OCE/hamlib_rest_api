@@ -10,27 +10,35 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"sync"
 )
 
-// RotatorConfig holds the setup data for a single rotator daemon
+// // RotatorConfig holds the setup data for a single rotator daemon
+// type RotatorConfig struct {
+// 	ID       int    `json:"id"`
+// 	Model    int    `json:"model"`
+// 	Device   string `json:"device"`
+// 	Baudrate int    `json:"baudrate"`
+// 	Port     int    `json:"port"`
+// }
+
+// var (
+// 	activeRotators []RotatorConfig
+// 	rotConfigMu    sync.RWMutex
+// )
+
 type RotatorConfig struct {
-	ID       int    `json:"id"`
-	Model    int    `json:"model"`
-	Device   string `json:"device"`
-	Baudrate int    `json:"baudrate"`
-	Port     int    `json:"port"`
+	ID            int    `json:"id"`
+	Model         int    `json:"model"`
+	Device        string `json:"device"`
+	Baudrate      int    `json:"baudrate"`
+	Port          int    `json:"port"`
+	ServiceStatus string `json:"status"` // Wird beim Laden des Zustands gesetzt
 }
-
-var (
-	activeRotators []RotatorConfig
-	rotConfigMu    sync.RWMutex
-)
 
 // LoadRotatorConfig reads the rotator configurations from a JSON file
 func LoadRotatorConfig(filePath string) error {
-	rotConfigMu.Lock()
-	defer rotConfigMu.Unlock()
+	// rotConfigMu.Lock()
+	// defer rotConfigMu.Unlock()
 
 	file, err := os.ReadFile(filePath)
 	if err != nil {
@@ -42,18 +50,38 @@ func LoadRotatorConfig(filePath string) error {
 		return fmt.Errorf("failed to parse rotator json data: %w", err)
 	}
 
-	activeRotators = configs
+	// activeRotators = configs
 	return nil
 }
 
 // GetRotators returns a thread-safe copy of all configured rotators
-func GetRotators() []RotatorConfig {
-	rotConfigMu.RLock()
-	defer rotConfigMu.RUnlock()
+// func GetRotators() []RotatorConfig {
+// read list of rotators from file
 
-	dst := make([]RotatorConfig, len(activeRotators))
-	copy(dst, activeRotators)
-	return dst
+// rotConfigMu.RLock()
+// defer rotConfigMu.RUnlock()
+
+// dst := make([]RotatorConfig, len(activeRotators))
+// copy(dst, activeRotators)
+// return dst
+// }
+
+func GetRotators() ([]RotatorConfig, error) {
+	jsonPath := "/etc/hamlib_rest_api/rotctld.json"
+
+	// 1. Datei lesen
+	file, err := os.ReadFile(jsonPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Parsen
+	var rots []RotatorConfig
+	if err := json.Unmarshal(file, &rots); err != nil {
+		return nil, err
+	}
+
+	return rots, nil
 }
 
 // GetRotctldStatus queries the live systemd controller state safely using the exit code
@@ -71,13 +99,23 @@ func GetRotctldStatus(id int) string {
 
 // PollRotctlDaemon connects to the backend rotctld TCP port and sends a raw command
 func PollRotctlDaemon(rotID int, command string) ([]string, error) {
+	rots, err := GetRotators()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rotators: %w", err)
+	}
 	var rot *RotatorConfig
-	for _, r := range GetRotators() {
+	for _, r := range rots {
 		if r.ID == rotID {
 			rot = &r
 			break
 		}
 	}
+	// for _, r := range GetRotators() {
+	// 	if r.ID == rotID {
+	// 		rot = &r
+	// 		break
+	// 	}
+	// }
 	if rot == nil {
 		return nil, fmt.Errorf("rotator with id=%d not defined", rotID)
 	}
@@ -175,31 +213,27 @@ func HandleListRotators(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Parse into a local slice
-	var configs []RotatorConfig
-	if err := json.Unmarshal(file, &configs); err != nil {
+	var rots []RotatorConfig
+	if err := json.Unmarshal(file, &rots); err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("Failed to parse rotator configuration JSON: %v", err),
 		})
 		return
 	}
 
-	// 3. Enrich with systemd live status
-	type RotatorStatusResponse struct {
-		RotatorConfig
-		Status string `json:"status"`
+	for i := range rots {
+		if isRotctldInstanceRunning(rots[i].ID) {
+			rots[i].ServiceStatus = "running"
+		} else {
+			rots[i].ServiceStatus = "stopped"
+		}
 	}
 
-	response := []RotatorStatusResponse{}
-	for _, cfg := range configs {
-		response = append(response, RotatorStatusResponse{
-			RotatorConfig: cfg,
-			Status:        GetRotctldStatus(cfg.ID),
-		})
+	if rots == nil {
+		rots = []RotatorConfig{}
 	}
 
-	// 4. Return the enriched list (guaranteed to be at least "[]")
-	WriteJSON(w, http.StatusOK, response)
+	WriteJSON(w, http.StatusOK, rots)
 }
 
 // HandleStartService maps to POST /rotator/{rotator_id}/start
@@ -226,4 +260,14 @@ func HandleStopService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " stopped"})
+}
+
+func isRotctldInstanceRunning(rotID int) bool {
+	serviceName := fmt.Sprintf("rotctld@%d.service", rotID)
+	cmd := exec.Command("systemctl", "is-active", serviceName)
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(output)) == "active"
 }

@@ -9,6 +9,11 @@ import (
 
 func RegisterRoutesRigctld(mux *http.ServeMux) {
 	// core routes
+	// mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/service/start", rigctld.HandleStartRigctld)
+	// mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/service/stop", rigctld.HandleStopRigctld)
+	// mux.HandleFunc("GET "+config.ApiBasePath+"/devices/rigs", rigctld.HandleListRigs)
+
+	// Basic Control Endpoints
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/frequency", rigctld.HandleGetFrequency)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/frequency", rigctld.HandleSetFrequency)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/mode", rigctld.HandleGetMode)
@@ -102,7 +107,7 @@ func RegisterRoutesRigctld(mux *http.ServeMux) {
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/service/start", rigctld.HandleStartRigctld)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/service/stop", rigctld.HandleStopRigctld)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/devices/rigs", rigctld.HandleListRigs)
-	mux.HandleFunc("GET "+config.ApiBasePath+"/devices", rigctld.HandleListDevices)
+	mux.HandleFunc("GET "+config.ApiBasePath+"/devices", HandleListDevices)
 
 }
 
