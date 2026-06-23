@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func pollTrx(trxID int, command string) ([]string, error) {
@@ -26,43 +28,28 @@ func pollTrx(trxID int, command string) ([]string, error) {
 	var lines []string
 	scanner := bufio.NewScanner(conn)
 
-	cmdPrefix := strings.Split(command, " ")[0]
-	isDynamic := cmdPrefix == "get_modes" || cmdPrefix == "dump_state" || cmdPrefix == "get_rig_info" || cmdPrefix == "a" || cmdPrefix == "A"
+	for {
+		conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
 
-	expected_lines := 1
-	switch cmdPrefix {
-	case "m", "s", "x":
-		expected_lines = 2
-	case "k":
-		expected_lines = 3
-	}
-
-	for scanner.Scan() {
-		// lines = append(lines, strings.TrimSpace(scanner.Text()))
-
-		text := strings.TrimSpace(scanner.Text())
-		if text == "RPRT 0" {
-			if len(lines) == 0 {
-				break
-			}
-			continue
-		}
-		if text != "" {
-			lines = append(lines, text)
-		}
-
-		if !isDynamic && len(lines) >= expected_lines {
+		if !scanner.Scan() {
 			break
 		}
+
+		text := strings.TrimSpace(scanner.Text())
+		if text == "" {
+			continue
+		}
+
+		if strings.HasPrefix(text, "RPRT") {
+			break
+		}
+
+		lines = append(lines, text)
 	}
 
-	if err != nil {
-		fmt.Printf("DEBUG: pollTrx error: %v\n", err)
-	} else {
-		fmt.Printf("DEBUG: Received %d lines: %v\n", len(lines), lines)
-	}
+	conn.SetReadDeadline(time.Time{})
 
-	if err := scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil && !os.IsTimeout(err) {
 		return nil, fmt.Errorf("error reading response: %w", err)
 	}
 
