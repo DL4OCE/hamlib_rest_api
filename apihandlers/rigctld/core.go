@@ -27,7 +27,7 @@ func pollTrx(trxID int, command string) ([]string, error) {
 	scanner := bufio.NewScanner(conn)
 
 	cmdPrefix := strings.Split(command, " ")[0]
-	isDynamic := cmdPrefix == "get_modes" || cmdPrefix == "dump_state" || cmdPrefix == "get_rig_info"
+	isDynamic := cmdPrefix == "get_modes" || cmdPrefix == "dump_state" || cmdPrefix == "get_rig_info" || cmdPrefix == "a" || cmdPrefix == "A"
 
 	expected_lines := 1
 	switch cmdPrefix {

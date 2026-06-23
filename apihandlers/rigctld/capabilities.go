@@ -26,7 +26,7 @@ func HandleGetFunction(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]string{"function": output[0]})
+	WriteJSON(w, http.StatusOK, map[string]string{"function": param, "value": output[0]})
 }
 
 func HandleSetFunction(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func HandleGetParameter(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]string{"parameter": output[0]})
+	WriteJSON(w, http.StatusOK, map[string]string{"parameter": param, "value": output[0]})
 }
 
 func HandleSetParameter(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +93,7 @@ func HandleGetScanList(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string][]string{"scan_types": strings.Fields(output[0])})
+	WriteJSON(w, http.StatusOK, map[string][]string{"scan_modes": strings.Fields(output[0])})
 }
 
 func HandleGetScan(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +104,7 @@ func HandleGetScan(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Invalid response"})
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]string{"scan_state": output[0]})
+	WriteJSON(w, http.StatusOK, map[string]string{"scan_state": param, "value": output[0]})
 }
 
 func HandleSetScan(w http.ResponseWriter, r *http.Request) {

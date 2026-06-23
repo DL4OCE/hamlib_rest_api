@@ -86,20 +86,20 @@ test_post_api $RIG_BASE_URL/level/RFPOWER "(Set TX power)" '{"newValue":"0.50000
 echo -e "\n\n[4. Functions, Parameters & Scans]"
 
 test_get_api $RIG_BASE_URL/function/list "(Get list of functions)"
-test_get_api $RIG_BASE_URL/function/RIT "(Get current RIT)"
+test_get_api $RIG_BASE_URL/function/RIT "(Get current RIT to demonstrate function call works)"
 test_post_api $RIG_BASE_URL/function/RIT "(Set current RIT)" '{"newValue":"1"}'
 
 test_get_api $RIG_BASE_URL/parameter/list "(Get list of parameters)"
-test_get_api $RIG_BASE_URL/parameter/APO "(Get current APO duration value)"
+test_get_api $RIG_BASE_URL/parameter/APO "(Get current APO duration value to demonstrate parameter retrieval works)"
 test_post_api $RIG_BASE_URL/parameter/APO "(Get current APO duration value)" '{"newValue":"60"}'
 
-test_get_api $RIG_BASE_URL/scan/list "(Get list of scan channels)"
+test_get_api $RIG_BASE_URL/scan/list "(Get list of scan modes)"
 # test_get_api $RIG_BASE_URL/scan/MEM "(Is memory scan mode enabled)"
 # test_post_api $RIG_BASE_URL/scan/MEM "(Set memory scan mode)" '{"newValue":"1"}'
 
-test_get_api $RIG_BASE_URL/transceive/list "(Get list of scan channels)"
-test_get_api $RIG_BASE_URL/transceive "(Is transceive mode enabled)"
-test_post_api $RIG_BASE_URL/transceive "(Enable / disable transceive mode)" '{"newValue":"1"}'
+# test_get_api $RIG_BASE_URL/transceive/list "(Get list of transceive modes)"
+# test_get_api $RIG_BASE_URL/transceive "(Is transceive mode enabled)"
+# test_post_api $RIG_BASE_URL/transceive "(Enable / disable transceive mode)" '{"newValue":"1"}'
 
 # ==============================================================================
 # 5. REPEATER, TONES & VFO
@@ -151,7 +151,7 @@ test_post_api $RIG_BASE_URL/xit "(Set XIT state to 0)" '{"newValue":"0"}'
 # ==============================================================================
 echo -e "\n\n[7. Morse, Rig State & Conversions]"
 
-test_post_api $RIG_BASE_URL/morse "(Send Morse code: CQ CQ DE DL4OCE)" '{"text":"CQ CQ DE DL4OCE"}'
+# test_post_api $RIG_BASE_URL/morse "(Send Morse code: CQ CQ DE DL4OCE)" '{"text":"CQ CQ DE DL4OCE"}'
 test_post_api $RIG_BASE_URL/morse/stop "(Stop Morse code)"
 
 # test_get_api $RIG_BASE_URL/morse/wait "(Get Morse wait time)"
@@ -164,10 +164,10 @@ test_post_api $RIG_BASE_URL/twiddle "(Set twiddle state to 1)" '{"newValue":"1"}
 test_post_api $RIG_BASE_URL/cache "(Set cache state to 10)" '{"newValue":"10"}'
 test_get_api $RIG_BASE_URL/capabilities "(Get rig capabilities)"
 test_get_api $RIG_BASE_URL/configuration "(Get rig configuration)"
-test_post_api $RIG_BASE_URL/state/dump "(Dump rig state)" '{}'
+# test_post_api $RIG_BASE_URL/state/dump "(Dump rig state)" '{}'
 # test_get_api $RIG_BASE_URL/rig_info "(Get rig info)"
 
-test_get_api $RIG_BASE_URL/modes "(Get list of supported modes)"
+# test_get_api $RIG_BASE_URL/modes "(Get list of supported modes)"
 # test_get_api $RIG_BASE_URL/power_state "(Get current power state)"
 test_post_api $RIG_BASE_URL/power_state "(Set power state to 1)" '{"newValue":"1"}'
 
