@@ -106,8 +106,8 @@ func RegisterRoutesRigctld(mux *http.ServeMux) {
 	// Systemctl Routen für rigctld Dienste
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/service/start", rigctld.HandleStartRigctld)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/service/stop", rigctld.HandleStopRigctld)
-	mux.HandleFunc("GET "+config.ApiBasePath+"/devices/rigs", rigctld.HandleListRigs)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/devices", HandleListDevices)
+	mux.HandleFunc("GET "+config.ApiBasePath+"/devices/rigs", rigctld.HandleListRigs)
 
 }
 

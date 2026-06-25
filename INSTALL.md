@@ -18,5 +18,5 @@ sudo ./install.sh
 
 ```
 
-After installation, you can find a rigctld GUI at http://localhost:8080/gui/config_rigctld.html
+After installation, you can find a GUI to start / stop services at http://localhost:8080/gui/control_services.html
 

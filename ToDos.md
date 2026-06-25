@@ -7,3 +7,4 @@
 === REST API ===
 * iterate through results of i.e. /function/list and request all values stored
     * same for further lists
+* rigctl: read rig info from config file instead of hard-coding

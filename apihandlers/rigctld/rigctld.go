@@ -41,7 +41,7 @@ func isTrxIDDefined(trxID int) bool {
 	return false
 }
 
-func isRigctldInstanceRunning(trxID int) bool {
+func IsRigctldInstanceRunning(trxID int) bool {
 	serviceName := fmt.Sprintf("rigctld@%d.service", trxID)
 	cmd := exec.Command("systemctl", "is-active", serviceName)
 	output, _ := cmd.Output()
@@ -62,7 +62,7 @@ func HandleStartRigctld(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isRigctldInstanceRunning(trxID) {
+	if IsRigctldInstanceRunning(trxID) {
 		WriteJSON(w, http.StatusConflict, map[string]string{"error": "Service already running"})
 		return
 	}
@@ -83,7 +83,7 @@ func HandleStopRigctld(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !isRigctldInstanceRunning(trxID) {
+	if !IsRigctldInstanceRunning(trxID) {
 		WriteJSON(w, http.StatusConflict, map[string]string{"error": "Service not running"})
 		return
 	}
@@ -112,7 +112,7 @@ func HandleListRigs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := range trxs {
-		if isRigctldInstanceRunning(trxs[i].ID) {
+		if IsRigctldInstanceRunning(trxs[i].ID) {
 			trxs[i].ServiceStatus = "running"
 		} else {
 			trxs[i].ServiceStatus = "stopped"

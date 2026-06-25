@@ -13,7 +13,7 @@ import (
 )
 
 func pollTrx(trxID int, command string) ([]string, error) {
-	targetPort := 4532 + trxID
+	targetPort := 4499 + trxID
 	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", targetPort))
 	if err != nil {
 		return nil, fmt.Errorf("Could not reach rigctld on port %d", targetPort)

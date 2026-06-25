@@ -223,7 +223,7 @@ func HandleListRotators(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := range rots {
-		if isRotctldInstanceRunning(rots[i].ID) {
+		if IsRotctldInstanceRunning(rots[i].ID) {
 			rots[i].ServiceStatus = "running"
 		} else {
 			rots[i].ServiceStatus = "stopped"
@@ -263,7 +263,7 @@ func HandleStopService(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " stopped"})
 }
 
-func isRotctldInstanceRunning(rotID int) bool {
+func IsRotctldInstanceRunning(rotID int) bool {
 	serviceName := fmt.Sprintf("rotctld@%d.service", rotID)
 	cmd := exec.Command("systemctl", "is-active", serviceName)
 	output, err := cmd.Output()

@@ -84,14 +84,14 @@ This file holds an array of JSON objects representing your transceivers.
     "model": "1",
     "device": "/dev/ttyUSB0",
     "baudrate": "19200",
-    "port": "4533"
+    "port": "4500"
   },
   {
     "id": 2,
     "model": "1022",
     "device": "/dev/ttyUSB1",
     "baudrate": "9600",
-    "port": "4534"
+    "port": "4501"
   }
 ]
 ```
@@ -103,7 +103,7 @@ This file holds an array of JSON objects representing your transceivers.
   * To lookup your physical device ID, check the official [Hamlib Supported Rig List Matrix](https://github.com/Hamlib/Hamlib/wiki/Supported-Radios) or run `rigctl -l` on your system.
 * **`device`** *(String)*: Absolute path to the hardware interface TTY line (e.g., `/dev/ttyUSB0`). 
 * **`baudrate`** *(String)*: Serial speed matching the radio's VFO interface menu settings.
-* **`port`** *(String)*: The TCP port assigned to this daemon process instance (e.g., `"4533"`). Every rig instance must route to its own port block.
+* **`port`** *(String)*: The TCP port assigned to this daemon process instance (e.g., `"4500"`). Every rig instance must route to its own port block.
 
 ---
 
@@ -118,14 +118,14 @@ This file configures individual array objects tracking antenna heading controlle
     "id": 1,
     "model": "1",
     "device": "dummy",
-    "port": "4535",
+    "port": "4500",
     "baudrate": "9600"
   },
   { 
     "id": 2,
     "model": "1",
     "device": "dummy",
-    "port": "4536",
+    "port": "4500",
     "baudrate": "19200"
   }
 ]
