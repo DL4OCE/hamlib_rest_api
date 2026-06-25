@@ -34,8 +34,9 @@ echo "--------------------------------------------------"
 # === NEW === SYSTEM & SERVICE MANAGEMENT (GLOBAL ENDPOINTS)
 # ==============================================================================
 echo -e "[0. System & Service Management]"
+test_get_api $API_URL$API_BASE/devices "(list all devices)"
 test_get_api $API_URL$API_BASE/devices/rigs "(list rigs (transceivers))"
-test_get_api $API_URL$API_BASE/devices/rotators "(list rotators)"
+# test_get_api $API_URL$API_BASE/devices/rotators "(list rotators)"
 test_post_api $RIG_BASE_URL/service/stop "(Stop TRX 1)"
 test_post_api $RIG_BASE_URL/service/start "(Start TRX 1)"
 test_post_api $ROTATOR_BASE_URL/service/stop "(Stop Rotator 1)"
