@@ -18,10 +18,35 @@ EOF
 chmod 0440 "$SUDOERS_FILE"
 echo "Wrote sudoers file to $SUDOERS_FILE for user $REAL_USER"
 
-# install dependencies
-apt update && sudo apt install -y libhamlib-utils jq curl tar
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    ID_LIKE=${ID_LIKE:-$ID}
+else
+    echo "Error: Cannot detect Linux distribution."
+    exit 1
+fi
 
-# get latest binary release from github
+echo "Detecting package manager for distribution: $ID (like: $ID_LIKE)"
+
+case "$ID_LIKE" in
+    *debian*|*ubuntu*)
+        apt update && apt install -y libhamlib-utils jq curl tar
+        ;;
+    *fedora*|*rhel*|*centos*)
+        dnf install -y hamlib jq curl tar
+        ;;
+    *arch*)
+        pacman -Sy --needed --noconfirm hamlib jq curl tar
+        ;;
+    *suse*)
+        zypper install -y hamlib jq curl tar
+        ;;
+    *)
+        echo "Warning: Unsupported distribution family ($ID_LIKE). Open a ticket. Exiting."
+        exit 65
+        ;;
+esac
+
 REPO="DL4OCE/hamlib_rest_api"
 BINARY_NAME="hamlib_rest_api"
 INSTALL_DIR="/usr/local/bin"
