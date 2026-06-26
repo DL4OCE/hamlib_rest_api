@@ -1,0 +1,22 @@
+FROM alpine:latest AS builder
+
+RUN apk add --no-cache \
+    build-essential \
+    autoconf \
+    automake \
+    libtool \
+    pkgconfig \
+    git
+
+ARG HAMLIB_TAG=Hamlib-4.7
+
+RUN git clone --depth 1 --branch ${HAMLIB_TAG} https://github.com/Hamlib/Hamlib.git /tmp/hamlib
+WORKDIR /tmp/hamlib
+RUN ./bootstrap && \
+    ./configure --prefix=/usr/local --disable-shared --enable-static && \
+    make -j$(nproc) && \
+    make install
+
+FROM scratch
+COPY --from=builder /usr/local/bin/rigctld /rigctld
+COPY --from=builder /usr/local/bin/rotctld /rotctld
