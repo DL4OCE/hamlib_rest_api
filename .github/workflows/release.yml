@@ -4,10 +4,10 @@ name: Release
 on:
   push:
     tags:
-      - 'v*' # Trigger wird ausgelöst, wenn ein Tag gepusht wird, der mit 'v' beginnt (z.B. v1.0.0)
+      - 'v*'
 
 permissions:
-  contents: write # Wichtig: Erlaubt der Action, Releases und Artefakte hochzuladen
+  contents: write
 
 jobs:
   goreleaser:
@@ -16,12 +16,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Wichtig für das automatische Changelog
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22' # Deine genutzte Go-Version
+          go-version: '1.22'
           cache: false
 
       - name: Run GoReleaser
@@ -31,4 +31,4 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Wird automatisch von GitHub bereitgestellt
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

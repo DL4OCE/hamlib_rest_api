@@ -72,7 +72,7 @@ echo "Installed $BINARY_NAME to $INSTALL_DIR/$BINARY_NAME"
 
 # install hamlib_rest_api systemd service
 API_SERVICE="/etc/systemd/system/hamlib_rest_api.service"
-cp hamlib_rest_api.service "$API_SERVICE"
+cp services/hamlib_rest_api.service "$API_SERVICE"
 sed -i "s/{{USER}}/$REAL_USER/g" "$API_SERVICE"
 systemctl daemon-reload
 systemctl enable hamlib_rest_api.service
