@@ -2,9 +2,8 @@
 
 
 ```
-cd /tmp
-git clone https://github.com/DL4OCE/hamlib_rest_api.git
-cd hamlib_rest_api
+git clone https://github.com/DL4OCE/hamlib_rest_api.git /tmp/hamlib_rest_api
+cd /tmp/hamlib_rest_api
 
 # Modify rigctld.config according to your needs:
 editor config/rigctld.json
