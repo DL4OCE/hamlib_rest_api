@@ -18,34 +18,104 @@ EOF
 chmod 0440 "$SUDOERS_FILE"
 echo "Wrote sudoers file to $SUDOERS_FILE for user $REAL_USER"
 
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    ID_LIKE=${ID_LIKE:-$ID}
-else
-    echo "Error: Cannot detect Linux distribution."
-    exit 1
-fi
+# install hamlib 
 
-echo "Detecting package manager for distribution: $ID (like: $ID_LIKE)"
-
-case "$ID_LIKE" in
-    *debian*|*ubuntu*)
-        apt update && apt install -y libhamlib-utils jq curl tar
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)
+        BIN_SUBDIR="amd64"
         ;;
-    *fedora*|*rhel*|*centos*)
-        dnf install -y hamlib jq curl tar
-        ;;
-    *arch*)
-        pacman -Sy --needed --noconfirm hamlib jq curl tar
-        ;;
-    *suse*)
-        zypper install -y hamlib jq curl tar
+    aarch64)
+        BIN_SUBDIR="arm64"
         ;;
     *)
-        echo "Warning: Unsupported distribution family ($ID_LIKE). Open a ticket. Exiting."
-        exit 65
+        BIN_SUBDIR="unknown"
         ;;
 esac
+
+echo "Detected system architecture: $ARCH"
+
+LOCAL_BIN_DIR="./build/binaries/linux"
+TARGET_DIR="/usr/bin" #/usr/local/bin
+
+echo "Attempting to install Hamlib binaries for $BIN_SUBDIR..."
+systemctl stop rigctld@*
+systemctl stop rotctld@*
+
+if [ "$BIN_SUBDIR" != "unknown" ] && [ -f "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rigctld" ] && [ -f "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rotctld" ]; then
+    echo "[+] Found local binaries for $BIN_SUBDIR."
+    echo "Installing pre-[x]-compiled Hamlib binaries to ${TARGET_DIR}..."
+    
+    # Ensure the target directory exists
+    sudo mkdir -p "$TARGET_DIR"
+    
+    sudo cp "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rigctld" "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rotctld" "${TARGET_DIR}/"
+    # sudo cp "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rigctld" "${TARGET_DIR}/rigctld"
+    # sudo cp "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rotctld" "${TARGET_DIR}/rotctld"
+    sudo chmod +x "${TARGET_DIR}/rigctld" "${TARGET_DIR}/rotctld"
+    
+    echo "✔ Custom binaries installed successfully!"
+    "${TARGET_DIR}/rigctld" --version
+    "${TARGET_DIR}/rotctld" --version
+else
+    echo "[-] No matching local binaries found (or architecture not supported)."
+    echo "Falling back to distribution package..."
+    echo "Searching for a suitable distribution package..."
+    
+    if [ -x "$(command -v apt-get)" ]; then
+        echo "Debian/Ubuntu-based system detected."
+        sudo apt-get update && sudo apt-get install -y libhamlib-utils jq curl tar
+    elif [ -x "$(command -v pacman)" ]; then
+        echo "Arch-based system detected."
+        sudo pacman -Syu --noconfirm hamlib jq curl tar
+    elif [ -x "$(command -v dnf)" ]; then
+        echo "Fedora/RHEL-based system detected."
+        sudo dnf install -y hamlib jq curl tar
+    elif [ -x "$(command -v zypper)" ]; then
+        echo "openSUSE-based system detected."
+        sudo zypper install -y hamlib jq curl tar
+    else
+        echo "Error: No supported package manager for your distribution found. Please install Hamlib manually. Open a ticket"
+        exit 65
+    fi
+    
+    echo "✔ Distribution package installed successfully!"
+    rigctld --version
+    rotctld --version
+fi
+
+
+# if [ -f /etc/os-release ]; then
+#     . /etc/os-release
+#     ID_LIKE=${ID_LIKE:-$ID}
+# else
+#     echo "Error: Cannot detect Linux distribution."
+#     exit 1
+# fi
+
+# echo "Detecting package manager for distribution: $ID (like: $ID_LIKE)"
+
+# case "$ID_LIKE" in
+#     *debian*|*ubuntu*)
+#         apt update && apt install -y jq curl tar # libhamlib-utils
+#         ;;
+#     *fedora*|*rhel*|*centos*)
+#         dnf install -y jq curl tar # hamlib-utils
+#         ;;
+#     *arch*)
+#         pacman -Sy --needed --noconfirm jq curl tar #hamlib 
+#         ;;
+#     *suse*)
+#         zypper install -y jq curl tar #hamlib
+#         ;;
+#     *)
+#         echo "Warning: Unsupported distribution family ($ID_LIKE). Open a ticket. Exiting."
+#         exit 65
+#         ;;
+# esac
+
+
+# install hamlib_rest_api binary from GitHub releases
 
 REPO="DL4OCE/hamlib_rest_api"
 BINARY_NAME="hamlib_rest_api"

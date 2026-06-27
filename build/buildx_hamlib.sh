@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-HAMLIB_VERSION="Hamlib-4.7"
+HAMLIB_VERSION="4.7.1" #"master" #"Hamlib-4.7"
 OUTPUT_DIR="./binaries"
 
 echo "Compiling Hamlib ${HAMLIB_VERSION}..."
