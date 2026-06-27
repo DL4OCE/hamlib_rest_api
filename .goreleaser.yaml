@@ -31,11 +31,7 @@ archives:
     format: tar.gz
     
     # Files to include in the release archive along with the binary
-    files:
-      - README.md
-      - ToDos.md
-      - config/rotctld.json
-      - services/rigctld@.service
+    #files:
 
 # Generates a checksums.txt so downloaders (or tools) can verify file integrity
 checksum:
