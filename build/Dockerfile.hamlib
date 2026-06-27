@@ -1,3 +1,5 @@
+ARG HAMLIB_TAG=4.7.1
+
 FROM debian:bookworm-slim AS builder
 
 RUN apt-get update && apt-get install -y \
@@ -13,6 +15,7 @@ RUN apt-get update && apt-get install -y \
 ARG HAMLIB_TAG=v4.7
 
 RUN git clone --depth 1 --branch ${HAMLIB_TAG} https://github.com/Hamlib/Hamlib.git /tmp/hamlib
+
 WORKDIR /tmp/hamlib
 
 RUN ./bootstrap && \
