@@ -9,7 +9,7 @@ MODEL=$(jq -r ".\"$TRX_ID\".model" $CONFIG_FILE)
 DEVICE=$(jq -r ".\"$TRX_ID\".device" $CONFIG_FILE)
 BAUD=$(jq -r ".\"$TRX_ID\".baud" $CONFIG_FILE)
 CIV=$(jq -r ".\"$TRX_ID\".civaddr" "$CONFIG_FILE")
-PORT=$((4532 + TRX_ID))
+PORT=$((4499 + TRX_ID))
 
 echo "Starte rigctld für TRX $TRX_ID auf Port $PORT mit Modell $MODEL an $DEVICE $CIV_STR..."
 CMD="exec rigctld -m $MODEL -r $DEVICE -s $BAUD -t $PORT"

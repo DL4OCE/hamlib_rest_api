@@ -34,8 +34,8 @@ archives:
     files:
       - README.md
       - ToDos.md
-      - rigctld.json
-      - rigctld@.service
+      - config/rotctld.json
+      - services/rigctld@.service
 
 # Generates a checksums.txt so downloaders (or tools) can verify file integrity
 checksum:

@@ -1,0 +1,25 @@
+FROM debian:bookworm-slim AS builder
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    git \
+    glibc-source \
+    libc6-dev
+
+ARG HAMLIB_TAG=v4.7
+
+RUN git clone --depth 1 --branch ${HAMLIB_TAG} https://github.com/Hamlib/Hamlib.git /tmp/hamlib
+WORKDIR /tmp/hamlib
+
+RUN ./bootstrap && \
+    ./configure --prefix=/usr/local --disable-shared --enable-static LDFLAGS="-static" && \
+    make -j$(nproc) && \
+    make install
+
+FROM scratch
+COPY --from=builder /usr/local/bin/rigctld /rigctld
+COPY --from=builder /usr/local/bin/rotctld /rotctld

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hamlib REST API Manager</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+        h1, h2 { color: #333; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; margin-bottom: 30px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf2f7; }
+        th { background-color: #4A5568; color: white; font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
+        code { background: #edf2f7; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        .status { font-weight: bold; padding: 4px 8px; border-radius: 4px; display: inline-block; font-size: 0.85rem; }
+        .running { background: #C6F6D5; color: #22543D; }
+        .stopped { background: #FED7D7; color: #742A2A; }
+        button { padding: 6px 12px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; margin-right: 4px; transition: background 0.2s; }
+        .btn-start { background: #48BB78; color: white; }
+        .btn-start:hover:not(:disabled) { background: #38A169; }
+        .btn-stop { background: #E53E3E; color: white; }
+        .btn-stop:hover:not(:disabled) { background: #C53030; }
+        button:disabled { background: #E2E8F0; color: #A0AEC0; cursor: not-allowed; }
+        .btn-refresh { background: #3182ce; color: white; padding: 10px 20px; font-size: 16px; margin-top: 10px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-refresh:hover { background: #2b6cb0; }
+    </style>
+</head>
+<body>
+
+    <h1>transceivers (rigctld)</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Model</th>
+                <th>Device</th>
+                <th>Port</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="rigs-tbody">
+            <tr><td colspan="6">Loading transceivers...</td></tr>
+        </tbody>
+    </table>
+
+    <h2>rotators (rotctld)</h2>
+    <table id="rotator-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Model</th>
+                <th>Device</th>
+                <th>Port</th>
+                <th>Baudrate</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="7">Loading rotators...</td></tr>
+        </tbody>
+    </table>
+
+    <button class="btn-refresh" onclick="refreshAll()">🔄 Refresh Status</button>
+
+    <script>
+        const API_BASE = '/api/v1';
+
+        async function loadRigs() {
+            try {
+                const response = await fetch(`${API_BASE}/devices/rigs`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const rigs = await response.json();
+                
+                const tbody = document.getElementById('rigs-tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                if (!rigs || rigs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No rigs configured.</td></tr>';
+                    return;
+                }
+
+                rigs.forEach(rig => {
+                    const isRunning = rig.status === "running";
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${rig.id}</td>
+                        <td>${rig.model}</td>
+                        <td><code>${rig.device}</code></td>
+                        <td>${rig.port}</td>
+                        <td>
+                            <span class="status ${isRunning ? 'running' : 'stopped'}">
+                                ${isRunning ? 'RUNNING' : 'STOPPED'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn-start" ${isRunning ? 'disabled' : ''} onclick="controlRig(${rig.id}, 'start')">Start</button>
+                            <button class="btn-stop" ${!isRunning ? 'disabled' : ''} onclick="controlRig(${rig.id}, 'stop')">Stop</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error fetching rigs:', error);
+                const tbody = document.getElementById('rigs-tbody');
+                if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="color:red;">Error loading data: ${error.message}</td></tr>`;
+            }
+        }
+
+        // async function controlRig(id, action) {
+        //     try {
+        //         const response = await fetch(`${API_BASE}/rigs/${id}/service/${action}`, { method: 'POST' });
+        //         if (!response.ok) {
+        //             const result = await response.json();
+        //             alert(`Fehler: ${result.error || 'Unbekannter Fehler'}`);
+        //         }
+        //         loadRigs();
+        //     } catch (error) {
+        //         alert(`Verbindung zum API-Server fehlgeschlagen: ${error}`);
+        //     }
+        // }
+
+        async function controlRig(id, action) {
+            try {
+                const response = await fetch(`${API_BASE}/rigs/${id}/service/${action}`, { method: 'POST' });
+                
+                // Falls der Server mit 409 (Conflict) oder 500 antwortet
+                if (!response.ok) {
+                    const result = await response.json();
+                    alert(`Fehler: ${result.error || 'Aktion fehlgeschlagen'}`);
+                }
+                
+                // Unabhängig vom Ausgang: Status sofort neu laden, um GUI zu synchronisieren
+                loadRigs();
+            } catch (error) {
+                alert(`Verbindung zum API-Server fehlgeschlagen: ${error}`);
+            }
+        }
+
+
+        async function loadRotators() {
+            try {
+                const response = await fetch(`${API_BASE}/devices/rotators`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const rotators = await response.json();
+                
+                const tbody = document.querySelector('#rotator-table tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                if (!rotators || rotators.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7">No rotators configured.</td></tr>';
+                    return;
+                }
+
+                rotators.forEach(rot => {
+                    const isRunning = rot.status === "running";
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${rot.id}</td>
+                        <td>${rot.model}</td>
+                        <td><code>${rot.device}</code></td>
+                        <td>${rot.port}</td>
+                        <td>${rot.baudrate ? rot.baudrate + ' bps' : 'N/A'}</td>
+                        <td>
+                            <span class="status ${isRunning ? 'running' : 'stopped'}">
+                                ${isRunning ? 'RUNNING' : 'STOPPED'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn-start" ${isRunning ? 'disabled' : ''} onclick="controlRotator(${rot.id}, 'start')">Start</button>
+                            <button class="btn-stop" ${!isRunning ? 'disabled' : ''} onclick="controlRotator(${rot.id}, 'stop')">Stop</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error fetching rotators:', error);
+                const tbody = document.querySelector('#rotator-table tbody');
+                if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="color:red;">Error loading data: ${error.message}</td></tr>`;
+            }
+        }
+
+        // async function controlRotator(id, action) {
+        //     try {
+        //         const response = await fetch(`${API_BASE}/rotators/${id}/service/${action}`, { method: 'POST' });
+        //         if (!response.ok) {
+        //             const result = await response.json();
+        //             alert(`Error: ${result.error || 'Unknown error'}`);
+        //         }
+        //         loadRotators();            
+        //     } catch (error) {
+        //         alert(`Connection to API server failed: ${error}`);
+        //     }
+        // }
+
+        async function controlRotator(id, action) {
+            try {
+                const response = await fetch(`${API_BASE}/rotators/${id}/service/${action}`, { method: 'POST' });
+                
+                // Falls der Server mit 409 (Conflict) oder 500 antwortet
+                if (!response.ok) {
+                    const result = await response.json();
+                    alert(`Error: ${result.error || 'Action failed'}`);
+                }
+                
+                // Unabhängig vom Ausgang: Status sofort neu laden
+                loadRotators();            
+            } catch (error) {
+                alert(`Connection to API server failed: ${error}`);
+            }
+        }
+
+        function refreshAll() {
+            loadRigs();
+            loadRotators();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            refreshAll();
+            setInterval(refreshAll, 5000);
+        });
+    </script>
+</body>
+</html>

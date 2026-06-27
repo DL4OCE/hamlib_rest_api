@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "model": 1,
+    "device": "dummy",
+    "port": 4600,
+    "baudrate": 9600
+  },
+  { 
+    "id": 2,
+    "model": 1,
+    "device": "dummy",
+    "port": 4601,
+    "baudrate": 19200
+  }
+]

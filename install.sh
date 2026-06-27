@@ -13,14 +13,40 @@ rm -f "$SUDOERS_FILE"
 cat << EOF > "$SUDOERS_FILE"
 # Auto-generated sudoers file for hamlib_rest_api - DO NOT EDIT
 $REAL_USER ALL=(ALL) NOPASSWD: /usr/bin/systemctl start rigctld@*, /usr/bin/systemctl stop rigctld@*
+$REAL_USER ALL=(ALL) NOPASSWD: /usr/bin/systemctl start rotctld@*, /usr/bin/systemctl stop rotctld@*
 EOF
 chmod 0440 "$SUDOERS_FILE"
 echo "Wrote sudoers file to $SUDOERS_FILE for user $REAL_USER"
 
-# install dependencies
-apt update && sudo apt install -y libhamlib-utils jq curl tar
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    ID_LIKE=${ID_LIKE:-$ID}
+else
+    echo "Error: Cannot detect Linux distribution."
+    exit 1
+fi
 
-# get latest binary release from github
+echo "Detecting package manager for distribution: $ID (like: $ID_LIKE)"
+
+case "$ID_LIKE" in
+    *debian*|*ubuntu*)
+        apt update && apt install -y libhamlib-utils jq curl tar
+        ;;
+    *fedora*|*rhel*|*centos*)
+        dnf install -y hamlib jq curl tar
+        ;;
+    *arch*)
+        pacman -Sy --needed --noconfirm hamlib jq curl tar
+        ;;
+    *suse*)
+        zypper install -y hamlib jq curl tar
+        ;;
+    *)
+        echo "Warning: Unsupported distribution family ($ID_LIKE). Open a ticket. Exiting."
+        exit 65
+        ;;
+esac
+
 REPO="DL4OCE/hamlib_rest_api"
 BINARY_NAME="hamlib_rest_api"
 INSTALL_DIR="/usr/local/bin"
@@ -54,7 +80,7 @@ systemctl restart hamlib_rest_api.service
 echo "Installed, enabled and started hamlib_rest_api systemd service as $REAL_USER"
 
 # install multi-instance rigctld systemd service template
-cp rigctld@.service /etc/systemd/system/
+cp services/rigctld@.service services/rotctld@.service /etc/systemd/system/
 
 # stop and disable all running rigctld services
 echo "Stopping all running rigctld services..."
@@ -68,6 +94,18 @@ for service in $ACTIVE_SERVICES; do
     fi
 done
 
+# stop and disable all running rotctld services
+echo "Stopping all running rotctld services..."
+systemctl list-units "rotctld@*" --plain --no-legend
+ACTIVE_SERVICES=$(systemctl list-units --all --plain --no-legend "rotctld@*" | awk '{print $1}')
+for service in $ACTIVE_SERVICES; do
+    if [ -n "$service" ]; then
+        echo "Stopping and deactivating $service ..."
+        systemctl stop "$service" || true
+        systemctl disable "$service" || true
+    fi
+done
+
 systemctl daemon-reload
 
-bash update_rigctld_services.sh
+bash update_hamlib_services.sh
