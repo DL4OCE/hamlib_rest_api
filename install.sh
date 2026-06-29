@@ -84,37 +84,6 @@ else
     rotctld --version
 fi
 
-
-# if [ -f /etc/os-release ]; then
-#     . /etc/os-release
-#     ID_LIKE=${ID_LIKE:-$ID}
-# else
-#     echo "Error: Cannot detect Linux distribution."
-#     exit 1
-# fi
-
-# echo "Detecting package manager for distribution: $ID (like: $ID_LIKE)"
-
-# case "$ID_LIKE" in
-#     *debian*|*ubuntu*)
-#         apt update && apt install -y jq curl tar # libhamlib-utils
-#         ;;
-#     *fedora*|*rhel*|*centos*)
-#         dnf install -y jq curl tar # hamlib-utils
-#         ;;
-#     *arch*)
-#         pacman -Sy --needed --noconfirm jq curl tar #hamlib 
-#         ;;
-#     *suse*)
-#         zypper install -y jq curl tar #hamlib
-#         ;;
-#     *)
-#         echo "Warning: Unsupported distribution family ($ID_LIKE). Open a ticket. Exiting."
-#         exit 65
-#         ;;
-# esac
-
-
 # install hamlib_rest_api binary from GitHub releases
 
 REPO="DL4OCE/hamlib_rest_api"
