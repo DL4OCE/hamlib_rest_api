@@ -76,8 +76,8 @@ func RegisterRoutesRigctld(mux *http.ServeMux) {
 	// Raw Commands, Morse & Power Conversions
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/raw", rigctld.HandleSetRawCommand)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/raw_rx", rigctld.HandleSetRawCommandRx)
-	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/power/to_factor", rigctld.HandleGetMwPower)
-	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/power/to_mw", rigctld.HandleGetPowerMw)
+	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/power/to_factor", rigctld.HandleGetMw2Power)
+	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/power/to_mw", rigctld.HandleGetPower2Mw)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/capabilities", rigctld.HandleGetCapabilities)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/configuration", rigctld.HandleGetConfiguration)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/morse", rigctld.HandleSetMorse)
