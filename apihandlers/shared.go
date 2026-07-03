@@ -96,7 +96,7 @@ func RegisterRoutesRigctld(mux *http.ServeMux) {
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/twiddle", rigctld.HandleSetTwiddle)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/cache", rigctld.HandleGetCache)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/cache", rigctld.HandleSetCache)
-	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/state/dump", rigctld.HandleSetStateDump)
+	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/state/dump", rigctld.HandleGetStateDump)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/rig_info", rigctld.HandleGetRigInfo)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/modes", rigctld.HandleGetModes)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/power_state", rigctld.HandleGetPowerState)
