@@ -35,7 +35,7 @@ func HandleSetTuningStep(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]any{})
 }
 
-func HandleGetLevelList(w http.ResponseWriter, r *http.Request) {
+func HandleGetLevels(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	output, err := pollTrx(trxID, "l ?")
 	if err != nil || len(output) == 0 {

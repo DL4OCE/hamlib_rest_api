@@ -34,7 +34,7 @@ fi
 case "$DISTRO" in
     debian|ubuntu|raspbian|pop|linuxmint|zorin)
         echo "Installing build tools for Debian/Ubuntu-based systems..."
-        sudo apt-get update
+        #sudo apt-get update
         sudo apt-get install -y build-essential autoconf automake libtool pkg-config git libusb-1.0-0-dev
         ;;
         
@@ -75,7 +75,7 @@ SUDOERS_FILE="/etc/sudoers.d/hamlib_rest_api"
 rm -f "$SUDOERS_FILE"
 cat << EOF > "$SUDOERS_FILE"
 # Auto-generated sudoers file for hamlib_rest_api - DO NOT EDIT
-$REAL_USER ALL=(ALL) NOPASSWD: /usr/bin/systemctl start rigctld@*, /usr/bin/systemctl stop rigctld@*
+$REAL_USER ALL=(ALL) NOPASSWD: /usr/binsystemctl start rigctld@*, /usr/bin/systemctl stop rigctld@*
 $REAL_USER ALL=(ALL) NOPASSWD: /usr/bin/systemctl start rotctld@*, /usr/bin/systemctl stop rotctld@*
 EOF
 chmod 0440 "$SUDOERS_FILE"

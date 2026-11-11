@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func HandleGetFunctionList(w http.ResponseWriter, r *http.Request) {
+func HandleGetFunctions(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	output, err := pollTrx(trxID, "u ?")
 	if err != nil || len(output) == 0 {
@@ -47,7 +47,7 @@ func HandleSetFunction(w http.ResponseWriter, r *http.Request) {
 
 // --- Parameter (p) ---
 
-func HandleGetParameterList(w http.ResponseWriter, r *http.Request) {
+func HandleGetParameters(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	output, err := pollTrx(trxID, "p ?")
 	if err != nil || len(output) == 0 {
@@ -86,7 +86,7 @@ func HandleSetParameter(w http.ResponseWriter, r *http.Request) {
 
 // --- Scan (g) ---
 
-func HandleGetScanList(w http.ResponseWriter, r *http.Request) {
+func HandleGetScanFunctions(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	output, err := pollTrx(trxID, "g ?")
 	if err != nil || len(output) == 0 {

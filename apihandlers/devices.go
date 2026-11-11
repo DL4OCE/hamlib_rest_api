@@ -32,9 +32,8 @@ func HandleListDevices(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(rigData, &rigs)
 	json.Unmarshal(rotData, &rots)
 
-	// Live-Status für Rigs ermitteln
 	for i := range rigs {
-		if rigctld.IsRigctldInstanceRunning(rigs[i].ID) { // Nutzt deine Prüffunktion (ggf. Export-Paketpräfix anpassen)
+		if rigctld.IsRigctldInstanceRunning(rigs[i].ID) { 
 			rigs[i].ServiceStatus = "RUNNING"
 		} else {
 			rigs[i].ServiceStatus = "STOPPED"
@@ -43,8 +42,8 @@ func HandleListDevices(w http.ResponseWriter, r *http.Request) {
 
 	// Live-Status für Rotatoren ermitteln
 	for i := range rots {
-		if rotctld.IsRotctldInstanceRunning(rots[i].ID) { // Nutzt deine Rotator-Prüffunktion
-			rots[i].ServiceStatus = "RUNNING" // bzw. das Feld, das in RotatorConfig den Status hält
+		if rotctld.IsRotctldInstanceRunning(rots[i].ID) { 
+			rots[i].ServiceStatus = "RUNNING" 
 		} else {
 			rots[i].ServiceStatus = "STOPPED"
 		}

@@ -9,10 +9,10 @@ import (
 
 func RegisterRoutesRigctld(mux *http.ServeMux) {
 	// services routines
-	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/service/start", rigctld.HandleStartRigctld)
-	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/service/stop", rigctld.HandleStopRigctld)
+	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/start-service", rigctld.HandleStartRigctld)
+	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/stop-service", rigctld.HandleStopRigctld)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/devices", HandleListDevices)
-	mux.HandleFunc("GET "+config.ApiBasePath+"/devices/rigs", rigctld.HandleListRigs)
+	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs", rigctld.HandleListRigs)
 
 	// Basic Control Endpoints
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/frequency", rigctld.HandleGetFrequency)
@@ -26,9 +26,9 @@ func RegisterRoutesRigctld(mux *http.ServeMux) {
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/split-modes", rigctld.HandleGetSplitModes)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/split-modes/{split_mode_name}", rigctld.HandleGetSplitMode)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/split-modes/{split_mode_name}", rigctld.HandleSetSplitMode)
+	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/levels", rigctld.HandleGetLevels)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/level/{level_param}", rigctld.HandleGetLevel)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/level/{level_param}", rigctld.HandleSetLevel)
-	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/levels", rigctld.HandleGetLevels)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/tuning-step", rigctld.HandleGetTuningStep)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/tuning-step", rigctld.HandleSetTuningStep)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/split-vfo", rigctld.HandleGetSplitVFO)
@@ -73,7 +73,7 @@ func RegisterRoutesRigctld(mux *http.ServeMux) {
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/xit", rigctld.HandleGetXit)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/xit", rigctld.HandleSetXit)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs/{trx_id}/antenna-number", rigctld.HandleGetAntennaNumber)
-	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/antenna-number", rigctld.HandleSetAntenna)
+	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/antenna-number", rigctld.HandleSetAntennaNumber)
 
 	// Raw Commands, Morse & Power Conversions
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/raw", rigctld.HandleSetRawCommand)
@@ -105,13 +105,15 @@ func RegisterRoutesRigctld(mux *http.ServeMux) {
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/power-state", rigctld.HandleSetPowerState)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/voice-mem", rigctld.HandleSetVoiceMem)
 
-
 }
 
 func RegisterRoutesRotctld(mux *http.ServeMux) {
-	mux.HandleFunc("GET "+config.ApiBasePath+"/devices/rotators", rotctld.HandleListRotators)
+	mux.HandleFunc("GET "+config.ApiBasePath+"/rotators", rotctld.HandleListRotators)
 	// Central raw command gateway (analogous to rigctld)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rotators/{rotator_id}/command", rotctld.HandleRawCommand)
+
+	mux.HandleFunc("POST "+config.ApiBasePath+"/rotators/{rotator_id}/start-service", rotctld.HandleStartService)
+	mux.HandleFunc("POST "+config.ApiBasePath+"/rotators/{rotator_id}/stop-service", rotctld.HandleStopService)
 
 	// Position and movement control
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rotators/{rotator_id}/position", rotctld.HandleGetPosition)
@@ -128,13 +130,10 @@ func RegisterRoutesRotctld(mux *http.ServeMux) {
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rotators/{rotator_id}/capabilities", rotctld.HandleGetCapabilities)
 
 	// Advanced hardware level and auxiliary function mappings
-	mux.HandleFunc("GET "+config.ApiBasePath+"/rotators/{rotator_id}/levels/{level}", rotctld.HandleGetLevel)
-	mux.HandleFunc("POST "+config.ApiBasePath+"/rotators/{rotator_id}/levels/{level}", rotctld.HandleSetLevel)
+	mux.HandleFunc("GET "+config.ApiBasePath+"/rotators/{rotator_id}/levels/{level_name}", rotctld.HandleGetLevel)
+	mux.HandleFunc("POST "+config.ApiBasePath+"/rotators/{rotator_id}/levels/{level_name}", rotctld.HandleSetLevel)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rotators/{rotator_id}/functions/{function_name}", rotctld.HandleGetFunction)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rotators/{rotator_id}/functions/{function_name}", rotctld.HandleSetFunction)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rotators/{rotator_id}/parameters/{parameter_name}", rotctld.HandleGetParameter)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rotators/{rotator_id}/parameters/{parameter_name}", rotctld.HandleSetParameter)
-
-	mux.HandleFunc("POST "+config.ApiBasePath+"/rotators/{rotator_id}/start-service", rotctld.HandleStartService)
-	mux.HandleFunc("POST "+config.ApiBasePath+"/rotators/{rotator_id}/stop-service", rotctld.HandleStopService)
 }

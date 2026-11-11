@@ -34,7 +34,7 @@ func HandleSetPTT(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]any{})
 }
 
-func HandleGetMemory(w http.ResponseWriter, r *http.Request) {
+func HandleGetMemoryChannelNumber(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	output, err := pollTrx(trxID, "e")
 	if err != nil || len(output) == 0 {
@@ -44,7 +44,7 @@ func HandleGetMemory(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]string{"memory": output[0]})
 }
 
-func HandleSetMemory(w http.ResponseWriter, r *http.Request) {
+func HandleSetMemoryChannelNumber(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	var body ValuePayload
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.NewValue == "" {
@@ -84,7 +84,7 @@ func HandleSetChannel(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]any{})
 }
 
-func HandleGetAntenna(w http.ResponseWriter, r *http.Request) {
+func HandleGetAntennaNumber(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	output, err := pollTrx(trxID, "y 0")
 	if err != nil || len(output) == 0 {
@@ -94,7 +94,7 @@ func HandleGetAntenna(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string][]string{"antennas": output})
 }
 
-func HandleSetAntenna(w http.ResponseWriter, r *http.Request) {
+func HandleSetAntennaNumber(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	var body ValuePayload
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.NewValue == "" {

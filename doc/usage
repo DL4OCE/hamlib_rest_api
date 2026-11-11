@@ -1,17 +1,5 @@
-curl -i http://localhost:8080/trx/1/frequency
-curl -i -X POST http://localhost:8080/trx/1/frequency \
-     -H "Content-Type: application/json" \
-     -d '{"newValue":"145425000"}'
+curl -i localhost:8080/api/v1/rigs/2/frequency
+curl -i -X POST http://localhost:8080/api/v1/rigs/2/frequency -H "Content-Type: application/json" -d '{"newValue":"145425000"}'
+curl -i -X POST http://localhost:8080/api/v1/rigs/2/frequency -H "Content-Type: application/json" -d '{"newValue":"145500000"}'
 
 
-
-
-
-
-
-
-
-
-
-curl localhost/hamlib_api_dl4oce/trx/0/frequency<br>
-curl -XPOST localhost/hamlib_api_dl4oce/trx/0/frequency -d'{"newValue":"145425000"}'<br>

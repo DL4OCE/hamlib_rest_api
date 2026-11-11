@@ -13,7 +13,7 @@ import (
 )
 
 func pollTrx(trxID int, command string) ([]string, error) {
-	targetPort := 4499 + trxID
+	targetPort := 4500 + trxID
 	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", targetPort))
 	if err != nil {
 		return nil, fmt.Errorf("Could not reach rigctld on port %d", targetPort)
@@ -83,13 +83,13 @@ func HandleSetFrequency(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	// var body map[string]string
 	var body struct {
-		NewValue string `json:"newValue"`
+		Frequency string `json:"frequency"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.NewValue == "" {
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Frequency == "" {
 		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON body"})
 		return
 	}
-	_, err := pollTrx(trxID, "F "+body.NewValue)
+	_, err := pollTrx(trxID, "F "+body.Frequency)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -182,6 +182,27 @@ func HandleSetSplitFrequency(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteJSON(w, http.StatusOK, map[string]any{})
+}
+
+// GET /rigs/{trx_id}/split-modes -> get_trx_split_modes
+func HandleGetSplitModes(w http.ResponseWriter, r *http.Request) {
+	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
+
+	output, err := pollTrx(trxID, "X ?")
+	if err != nil {
+		WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"error": err.Error()})
+		return
+	}
+
+	var modes []string
+	for _, line := range output {
+		fields := strings.Fields(line)
+		modes = append(modes, fields...)
+	}
+
+	WriteJSON(w, http.StatusOK, map[string]any{
+		"split_modes": modes,
+	})
 }
 
 // GET /trx/{trx_id}/split_mode -> get_trx_split_mode

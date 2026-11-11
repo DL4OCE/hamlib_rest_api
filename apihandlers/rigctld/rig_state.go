@@ -130,7 +130,7 @@ func HandleSetPowerState(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]any{})
 }
 
-func HandleSetStateDump(w http.ResponseWriter, r *http.Request) {
+func HandleGetStateDump(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	output, err := pollTrx(trxID, "dump_state")
 	if err != nil || len(output) == 0 {

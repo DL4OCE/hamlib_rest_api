@@ -1,15 +1,15 @@
 [
   {
     "id": 1,
-    "model": 1,
+    "model": 1020,
     "device": "/dev/ttyUSB0",
     "baudrate": 19200,
     "port": 4500
   },
   {
     "id": 2,
-    "model": 1022,
-    "device": "/dev/ttyUSB1",
+    "model": 1,
+    "device": "dummy",
     "baudrate": 9600,
     "port": 4501
   }
