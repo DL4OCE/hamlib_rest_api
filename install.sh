@@ -6,7 +6,70 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# patch sudoers file to allow current user to start/stop rigctld services
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)
+        ARCH="amd64" ;;
+    aarch64)
+        ARCH="arm64" ;;
+    armv7l)
+        ARCH="arm" ;;    
+    *)
+        echo "Error: unknown architecture $ARCH"
+        exit 1
+        ;;
+esac
+echo "Detected system architecture: $ARCH"
+
+echo "Detecting Linux distribution..."
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    DISTRO=$ID
+    DISTRO_LIKE=$ID_LIKE
+else
+    echo "Error: /etc/os-release not found. Cannot determine the distribution."
+    exit 1
+fi
+
+case "$DISTRO" in
+    debian|ubuntu|raspbian|pop|linuxmint|zorin)
+        echo "Installing build tools for Debian/Ubuntu-based systems..."
+        sudo apt-get update
+        sudo apt-get install -y build-essential autoconf automake libtool pkg-config git libusb-1.0-0-dev
+        ;;
+        
+    fedora|rhel|centos|rocky|almalinux)
+        echo "Installing build tools for Fedora/RHEL-based systems..."
+        sudo dnf install -y @development-tools autoconf automake libtool pkgconf git libusb1-devel
+        ;;
+        
+    arch|manjaro|endeavouros)
+        echo "Installing build tools for Arch Linux..."
+        sudo pacman -Sy --needed base-devel autoconf automake libtool pkgconf git libusb
+        ;;
+        
+    opensuse*|sles)
+        echo "Installing build tools for openSUSE..."
+        sudo zypper install -t pattern devel_basis
+        sudo zypper install -y autoconf automake libtool pkg-config git libusb-1_0-devel
+        ;;
+        
+    *)
+        if [[ "$DISTRO_LIKE" =~ "debian" ]]; then
+            echo "Fallback: using Debian-compatible routine..."
+            sudo apt-get update
+            sudo apt-get install -y build-essential autoconf automake libtool pkg-config git libusb-1.0-0-dev
+        elif [[ "$DISTRO_LIKE" =~ "rhel" || "$DISTRO_LIKE" =~ "fedora" ]]; then
+            echo "Fallback: using RedHat-compatible routine..."
+            sudo dnf install -y @development-tools autoconf automake libtool pkgconf git libusb1-devel
+        else
+            echo "Error: Unknown distribution '$DISTRO'. Please install the build tools (gcc, make, autotools, libusb-dev) manually."
+            exit 1
+        fi
+        ;;
+esac
+
+echo "Patching sudoers file to allow current user to start/stop rigctld services..."
 REAL_USER=${SUDO_USER:-$USER}
 SUDOERS_FILE="/etc/sudoers.d/hamlib_rest_api"
 rm -f "$SUDOERS_FILE"
@@ -18,90 +81,40 @@ EOF
 chmod 0440 "$SUDOERS_FILE"
 echo "Wrote sudoers file to $SUDOERS_FILE for user $REAL_USER"
 
-# install hamlib 
-
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64)
-        BIN_SUBDIR="amd64"
-        ;;
-    aarch64)
-        BIN_SUBDIR="arm64"
-        ;;
-    *)
-        BIN_SUBDIR="unknown"
-        ;;
-esac
-
-echo "Detected system architecture: $ARCH"
-
 LOCAL_BIN_DIR="./build/binaries/linux"
-TARGET_DIR="/usr/bin" #/usr/local/bin
 
-echo "Attempting to install Hamlib binaries for $BIN_SUBDIR..."
-systemctl stop rigctld@*
-systemctl stop rotctld@*
+systemctl stop "rigctld@*" 2>/dev/null || true
+systemctl stop "rotctld@*" 2>/dev/null || true
 
-if [ "$BIN_SUBDIR" != "unknown" ] && [ -f "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rigctld" ] && [ -f "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rotctld" ]; then
-    echo "[+] Found local binaries for $BIN_SUBDIR."
-    echo "Installing pre-[x]-compiled Hamlib binaries to ${TARGET_DIR}..."
-    
-    # Ensure the target directory exists
-    sudo mkdir -p "$TARGET_DIR"
-    
-    sudo cp "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rigctld" "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rotctld" "${TARGET_DIR}/"
-    # sudo cp "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rigctld" "${TARGET_DIR}/rigctld"
-    # sudo cp "${LOCAL_BIN_DIR}/${BIN_SUBDIR}/rotctld" "${TARGET_DIR}/rotctld"
-    sudo chmod +x "${TARGET_DIR}/rigctld" "${TARGET_DIR}/rotctld"
-    
-    echo "✔ Custom binaries installed successfully!"
-    "${TARGET_DIR}/rigctld" --version
-    "${TARGET_DIR}/rotctld" --version
+HAMLIB_VERSION="4.7.2"
+CURRENT_VERSION=$(rigctl --version 2>/dev/null | head -n 1 | awk '{print $3}')
+
+if [ "$(printf '%s\n' "$HAMLIB_VERSION" "$CURRENT_VERSION" | sort -V | head -n1)" != "$HAMLIB_VERSION" ]; then
+    echo "Need to install Hamlib version ${HAMLIB_VERSION} for ${ARCH} from source..."
+    wget https://github.com/Hamlib/Hamlib/releases/download/${HAMLIB_VERSION}/hamlib-${HAMLIB_VERSION}.tar.gz
+    tar -xzf hamlib-${HAMLIB_VERSION}.tar.gz
+    cd hamlib-${HAMLIB_VERSION}
+    ./configure
+    make -j$(nproc)
+    sudo make install
+    sudo ldconfig
+    rigctl --version
+    rotctl --version
+    rm -rf hamlib-${HAMLIB_VERSION} hamlib-${HAMLIB_VERSION}.tar.gz
+    hash -r
 else
-    echo "[-] No matching local binaries found (or architecture not supported)."
-    echo "Falling back to distribution package..."
-    echo "Searching for a suitable distribution package..."
-    
-    if [ -x "$(command -v apt-get)" ]; then
-        echo "Debian/Ubuntu-based system detected."
-        sudo apt-get update && sudo apt-get install -y libhamlib-utils jq curl tar
-    elif [ -x "$(command -v pacman)" ]; then
-        echo "Arch-based system detected."
-        sudo pacman -Syu --noconfirm hamlib jq curl tar
-    elif [ -x "$(command -v dnf)" ]; then
-        echo "Fedora/RHEL-based system detected."
-        sudo dnf install -y hamlib jq curl tar
-    elif [ -x "$(command -v zypper)" ]; then
-        echo "openSUSE-based system detected."
-        sudo zypper install -y hamlib jq curl tar
-    else
-        echo "Error: No supported package manager for your distribution found. Please install Hamlib manually. Open a ticket"
-        exit 65
-    fi
-    
-    echo "✔ Distribution package installed successfully!"
-    rigctld --version
-    rotctld --version
+    echo "Hamlib version ${HAMLIB_VERSION} is already installed."
 fi
-
-# install hamlib_rest_api binary from GitHub releases
 
 REPO="DL4OCE/hamlib_rest_api"
 BINARY_NAME="hamlib_rest_api"
 INSTALL_DIR="/usr/local/bin"
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64)  GOARCH="amd64" ;;
-    aarch64) GOARCH="arm64" ;;
-    armv7l)  GOARCH="arm" ;; # Fallback for older 32-bit Pis if compiled
-    *) echo "Error: unknown architecture $ARCH"; exit 1 ;;
-esac
-echo "Detected architecture: $ARCH, using GOARCH=$GOARCH"
+echo "Installing hamlib_rest_api for architecture: $ARCH"
 API_URL="https://api.github.com/repos/$REPO/releases/latest"
-DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name | contains(\"linux\") and contains(\"$GOARCH\") and endswith(\"tar.gz\")) | .browser_download_url")
+DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name | contains(\"linux\") and contains(\"$ARCH\") and endswith(\"tar.gz\")) | .browser_download_url")
 
 if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
-    echo "Error: Could not find a matching Linux-$GOARCH release asset on GitHub!"
+    echo "Error: Could not find a matching Linux-$ARCH release asset on GitHub!"
     exit 1
 fi
 echo "Downloading latest binary release from $DOWNLOAD_URL ..."
