@@ -76,7 +76,7 @@
 
         async function loadSysInfo() {
             try {
-                const response = await fetch(`${API_BASE}/devices`);
+                const response = await fetch(`http://localhost:8080/api/v1/devices`); //fetch(`${API_BASE}/devices`);
                 if (!response.ok) throw new Error('Not found');
                 const data = await response.json();
                 
@@ -89,17 +89,64 @@
             }
         }
 
+        // async function loadRigs() {
+        //     try {
+        //         const response = await fetch(`${API_BASE}/rigs`);
+        //         if (!response.ok) throw new Error('Network response was not ok');
+        //         const data = await response.json();
+                
+        //         const tbody = document.getElementById('rigs-tbody');
+        //         if (!tbody) return;
+        //         tbody.innerHTML = '';
+
+        //         if (!rigs || rigs.length === 0) {
+        //             tbody.innerHTML = '<tr><td colspan="6">No rigs configured.</td></tr>';
+        //             return;
+        //         }
+
+        //         rigs.forEach(rig => {
+        //             const isRunning = rig.status === "running";
+        //             const tr = document.createElement('tr');
+        //             tr.innerHTML = `
+        //                 <td>${rig.id}</td>
+        //                 <td>${rig.model}</td>
+        //                 <td><code>${rig.device}</code></td>
+        //                 <td>${rig.port}</td>
+        //                 <td>
+        //                     <span class="status ${isRunning ? 'running' : 'stopped'}">
+        //                         ${isRunning ? 'RUNNING' : 'STOPPED'}
+        //                     </span>
+        //                 </td>
+        //                 <td>
+        //                     <button class="btn-start" ${isRunning ? 'disabled' : ''} onclick="controlRig(${rig.id}, 'start-service')">Start</button>
+        //                     <button class="btn-stop" ${!isRunning ? 'disabled' : ''} onclick="controlRig(${rig.id}, 'stop-service')">Stop</button>
+        //                 </td>
+        //             `;
+        //             tbody.appendChild(tr);
+        //         });
+        //     } catch (error) {
+        //         console.error('Error fetching rigs:', error);
+        //         const tbody = document.getElementById('rigs-tbody');
+        //         if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="color:red;">Error loading data: ${error.message}</td></tr>`;
+        //     }
+        // }
+
+
+
         async function loadRigs() {
             try {
                 const response = await fetch(`${API_BASE}/rigs`);
                 if (!response.ok) throw new Error('Network response was not ok');
-                const rigs = await response.json();
+                const data = await response.json();
+                
+                // WICHTIG: Das Array aus dem Wrapper-Objekt holen!
+                const rigs = data.rigs || [];
                 
                 const tbody = document.getElementById('rigs-tbody');
                 if (!tbody) return;
                 tbody.innerHTML = '';
 
-                if (!rigs || rigs.length === 0) {
+                if (rigs.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6">No rigs configured.</td></tr>';
                     return;
                 }
@@ -144,17 +191,63 @@
             }
         }
 
+        // async function loadRotators() {
+        //     try {
+        //         const response = await fetch(`${API_BASE}/rotators`);
+        //         if (!response.ok) throw new Error('Network response was not ok');
+        //         const rotators = await response.json();
+                
+        //         const tbody = document.querySelector('#rotator-table tbody');
+        //         if (!tbody) return;
+        //         tbody.innerHTML = '';
+
+        //         if (!rotators || rotators.length === 0) {
+        //             tbody.innerHTML = '<tr><td colspan="7">No rotators configured.</td></tr>';
+        //             return;
+        //         }
+
+        //         rotators.forEach(rot => {
+        //             const isRunning = rot.status === "running";
+        //             const tr = document.createElement('tr');
+        //             tr.innerHTML = `
+        //                 <td>${rot.id}</td>
+        //                 <td>${rot.model}</td>
+        //                 <td><code>${rot.device}</code></td>
+        //                 <td>${rot.port}</td>
+        //                 <td>${rot.baudrate ? rot.baudrate + ' bps' : 'N/A'}</td>
+        //                 <td>
+        //                     <span class="status ${isRunning ? 'running' : 'stopped'}">
+        //                         ${isRunning ? 'RUNNING' : 'STOPPED'}
+        //                     </span>
+        //                 </td>
+        //                 <td>
+        //                     <button class="btn-start" ${isRunning ? 'disabled' : ''} onclick="controlRotator(${rot.id}, 'start-service')">Start</button>
+        //                     <button class="btn-stop" ${!isRunning ? 'disabled' : ''} onclick="controlRotator(${rot.id}, 'stop-service')">Stop</button>
+        //                 </td>
+        //             `;
+        //             tbody.appendChild(tr);
+        //         });
+        //     } catch (error) {
+        //         console.error('Error fetching rotators:', error);
+        //         const tbody = document.querySelector('#rotator-table tbody');
+        //         if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="color:red;">Error loading data: ${error.message}</td></tr>`;
+        //     }
+        // }
+
         async function loadRotators() {
             try {
                 const response = await fetch(`${API_BASE}/rotators`);
                 if (!response.ok) throw new Error('Network response was not ok');
-                const rotators = await response.json();
+                const data = await response.json();
+                
+                // WICHTIG: Das Array aus dem Wrapper-Objekt holen!
+                const rotators = data.rotators || [];
                 
                 const tbody = document.querySelector('#rotator-table tbody');
                 if (!tbody) return;
                 tbody.innerHTML = '';
 
-                if (!rotators || rotators.length === 0) {
+                if (rotators.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7">No rotators configured.</td></tr>';
                     return;
                 }
@@ -206,7 +299,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            loadSysInfo(); // Holt einmalig beim Start die Versionen
+            loadSysInfo();
             refreshAll();
             setInterval(refreshAll, 5000);
         });

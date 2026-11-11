@@ -2,6 +2,7 @@ package rotctld
 
 import (
 	"encoding/json"
+	"hamlib_rest_api/apihandlers/common"
 	"net/http"
 	"strconv"
 )
@@ -11,14 +12,14 @@ import (
 func HandleGetPosition(w http.ResponseWriter, r *http.Request) {
 	rotID, err := strconv.Atoi(r.PathValue("rotator_id"))
 	if err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
 		return
 	}
 
 	// Hamlib 'p' command returns Azimuth and Elevation on separate lines
 	output, err := PollRotctlDaemon(rotID, "p")
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -31,7 +32,7 @@ func HandleGetPosition(w http.ResponseWriter, r *http.Request) {
 		elevation = output[1]
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{
+	common.WriteJSON(w, http.StatusOK, map[string]string{
 		"azimuth":   azimuth,
 		"elevation": elevation,
 	})
@@ -42,7 +43,7 @@ func HandleGetPosition(w http.ResponseWriter, r *http.Request) {
 func HandleSetPosition(w http.ResponseWriter, r *http.Request) {
 	rotID, err := strconv.Atoi(r.PathValue("rotator_id"))
 	if err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
 		return
 	}
 
@@ -51,7 +52,7 @@ func HandleSetPosition(w http.ResponseWriter, r *http.Request) {
 		Elevation string `json:"elevation"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON request payload"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON request payload"})
 		return
 	}
 
@@ -59,11 +60,11 @@ func HandleSetPosition(w http.ResponseWriter, r *http.Request) {
 	command := "P " + body.Azimuth + " " + body.Elevation
 	_, err = PollRotctlDaemon(rotID, command)
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Target position updated"})
+	common.WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Target position updated"})
 }
 
 // HandlePark maps to POST /rotator/{rotator_id}/park
@@ -71,18 +72,18 @@ func HandleSetPosition(w http.ResponseWriter, r *http.Request) {
 func HandlePark(w http.ResponseWriter, r *http.Request) {
 	rotID, err := strconv.Atoi(r.PathValue("rotator_id"))
 	if err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
 		return
 	}
 
 	// Hamlib 'K' commands the rotator to park
 	_, err = PollRotctlDaemon(rotID, "K")
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Rotator moving to park position"})
+	common.WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Rotator moving to park position"})
 }
 
 // HandleStop maps to POST /rotator/{rotator_id}/stop
@@ -90,18 +91,18 @@ func HandlePark(w http.ResponseWriter, r *http.Request) {
 func HandleStop(w http.ResponseWriter, r *http.Request) {
 	rotID, err := strconv.Atoi(r.PathValue("rotator_id"))
 	if err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
 		return
 	}
 
 	// Hamlib 'S' immediately stops the rotator
 	_, err = PollRotctlDaemon(rotID, "S")
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Rotator stopped immediately"})
+	common.WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Rotator stopped immediately"})
 }
 
 // HandleMove maps to POST /rotator/{rotator_id}/move
@@ -109,7 +110,7 @@ func HandleStop(w http.ResponseWriter, r *http.Request) {
 func HandleMove(w http.ResponseWriter, r *http.Request) {
 	rotID, err := strconv.Atoi(r.PathValue("rotator_id"))
 	if err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
 		return
 	}
 
@@ -118,7 +119,7 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 		Speed     string `json:"speed"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON request payload"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON request payload"})
 		return
 	}
 
@@ -126,11 +127,11 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	command := "M " + body.Direction + " " + body.Speed
 	_, err = PollRotctlDaemon(rotID, command)
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Rotator continuous movement initialized"})
+	common.WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Rotator continuous movement initialized"})
 }
 
 // HandleReset maps to POST /rotator/{rotator_id}/reset
@@ -138,16 +139,16 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 func HandleReset(w http.ResponseWriter, r *http.Request) {
 	rotID, err := strconv.Atoi(r.PathValue("rotator_id"))
 	if err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
 		return
 	}
 
 	// Hamlib 'R' resets the rotator controller
 	_, err = PollRotctlDaemon(rotID, "R")
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Rotator controller reset command issued"})
+	common.WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Rotator controller reset command issued"})
 }

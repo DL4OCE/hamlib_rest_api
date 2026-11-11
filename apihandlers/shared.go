@@ -9,9 +9,9 @@ import (
 
 func RegisterRoutesRigctld(mux *http.ServeMux) {
 	// services routines
+	mux.HandleFunc("GET "+config.ApiBasePath+"/devices", HandleGetDevices)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/start-service", rigctld.HandleStartRigctld)
 	mux.HandleFunc("POST "+config.ApiBasePath+"/rigs/{trx_id}/stop-service", rigctld.HandleStopRigctld)
-	mux.HandleFunc("GET "+config.ApiBasePath+"/devices", HandleListDevices)
 	mux.HandleFunc("GET "+config.ApiBasePath+"/rigs", rigctld.HandleListRigs)
 
 	// Basic Control Endpoints

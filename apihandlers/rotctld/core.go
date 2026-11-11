@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"hamlib_rest_api/apihandlers/common"
 	"net"
 	"net/http"
 	"os"
@@ -34,6 +35,11 @@ type RotatorConfig struct {
 	Baudrate      int    `json:"baudrate"`
 	Port          int    `json:"port"`
 	ServiceStatus string `json:"status"` // Wird beim Laden des Zustands gesetzt
+}
+
+type RotatorListResponse struct {
+	RotctldVersion string          `json:"rotctld_version"`
+	Rotators       []RotatorConfig `json:"rotators"`
 }
 
 // LoadRotatorConfig reads the rotator configurations from a JSON file
@@ -67,6 +73,22 @@ func LoadRotatorConfig(filePath string) error {
 // return dst
 // }
 
+func GetRotctldVersion() string {
+	cmd := exec.Command("rotctld", "--version")
+	out, err := cmd.Output()
+	if err != nil {
+		return "unknown"
+	}
+	lines := strings.Split(string(out), "\n")
+	if len(lines) > 0 {
+		fields := strings.Fields(lines[0])
+		if len(fields) > 0 {
+			return fields[2]
+		}
+	}
+	return "unknown"
+}
+
 func GetRotators() ([]RotatorConfig, error) {
 	jsonPath := "/etc/hamlib_rest_api/rotctld.json"
 
@@ -92,10 +114,10 @@ func GetRotctldStatus(id int) string {
 
 	status := strings.TrimSpace(string(output))
 	if status == "active" {
-		return "RUNNING"
+		return "running"
 	}
 	// "inactive", "activating", "deactivating" etc. maps to STOPPED
-	return "STOPPED"
+	return "stopped"
 }
 
 func PollRotctlDaemon(rotID int, command string) ([]string, error) {
@@ -159,18 +181,18 @@ func PollRotctlDaemon(rotID int, command string) ([]string, error) {
 }
 
 // WriteJSON is a reusable HTTP utility for sending standardized JSON payloads
-func WriteJSON(w http.ResponseWriter, status int, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
-}
+// func WriteJSON(w http.ResponseWriter, status int, v interface{}) {
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(status)
+// 	json.NewEncoder(w).Encode(v)
+// }
 
 // HandleRawCommand targets the direct backend query endpoint: /rotator/{rotator_id}/command
 func HandleRawCommand(w http.ResponseWriter, r *http.Request) {
 	rotIDStr := r.PathValue("rotator_id")
 	rotID, err := strconv.Atoi(rotIDStr)
 	if err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid rotator ID format"})
 		return
 	}
 
@@ -178,22 +200,22 @@ func HandleRawCommand(w http.ResponseWriter, r *http.Request) {
 		Command string `json:"command"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body payload"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body payload"})
 		return
 	}
 
 	if strings.TrimSpace(body.Command) == "" {
-		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Command parameter cannot be empty"})
+		common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Command parameter cannot be empty"})
 		return
 	}
 
 	output, err := PollRotctlDaemon(rotID, body.Command)
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]interface{}{
+	common.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"rotator_id": rotID,
 		"command":    body.Command,
 		"response":   output,
@@ -208,7 +230,7 @@ func HandleListRotators(w http.ResponseWriter, r *http.Request) {
 	// 1. Read file directly on request
 	file, err := os.ReadFile(jsonPath)
 	if err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("Failed to read rotator configuration: %v", err),
 		})
 		return
@@ -216,7 +238,7 @@ func HandleListRotators(w http.ResponseWriter, r *http.Request) {
 
 	var rots []RotatorConfig
 	if err := json.Unmarshal(file, &rots); err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("Failed to parse rotator configuration JSON: %v", err),
 		})
 		return
@@ -234,7 +256,12 @@ func HandleListRotators(w http.ResponseWriter, r *http.Request) {
 		rots = []RotatorConfig{}
 	}
 
-	WriteJSON(w, http.StatusOK, rots)
+	response := RotatorListResponse{
+		RotctldVersion: GetRotctldVersion(),
+		Rotators:       rots,
+	}
+
+	common.WriteJSON(w, http.StatusOK, response)
 }
 
 // HandleStartService maps to POST /rotator/{rotator_id}/start
@@ -244,10 +271,10 @@ func HandleStartService(w http.ResponseWriter, r *http.Request) {
 
 	cmd := exec.Command("sudo", "systemctl", "start", serviceName)
 	if err := cmd.Run(); err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " started"})
+	common.WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " started"})
 }
 
 // HandleStopService maps to POST /rotator/{rotator_id}/stop
@@ -257,10 +284,10 @@ func HandleStopService(w http.ResponseWriter, r *http.Request) {
 
 	cmd := exec.Command("sudo", "systemctl", "stop", serviceName)
 	if err := cmd.Run(); err != nil {
-		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " stopped"})
+	common.WriteJSON(w, http.StatusOK, map[string]string{"status": "success", "message": serviceName + " stopped"})
 }
 
 func IsRotctldInstanceRunning(rotID int) bool {
