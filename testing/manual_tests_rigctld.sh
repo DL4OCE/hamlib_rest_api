@@ -165,7 +165,7 @@ test_post_api $RIG_BASE_URL/twiddle "(Set twiddle state to 1)" '{"newValue":"1"}
 test_post_api $RIG_BASE_URL/cache "(Set cache state to 10)" '{"newValue":"10"}'
 test_get_api $RIG_BASE_URL/capabilities "(Get rig capabilities)"
 test_get_api $RIG_BASE_URL/configuration "(Get rig configuration)"
-# test_post_api $RIG_BASE_URL/state/dump "(Dump rig state)" '{}'
+# test_get_api $RIG_BASE_URL/state/dump "(Dump rig state)" '{}'
 # test_get_api $RIG_BASE_URL/rig_info "(Get rig info)"
 
 # test_get_api $RIG_BASE_URL/modes "(Get list of supported modes)"

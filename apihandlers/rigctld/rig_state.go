@@ -179,7 +179,7 @@ func HandleSetRawCommandRx(w http.ResponseWriter, r *http.Request) {
 
 // --- Power Conversion ---
 
-func HandleGetMwPower(w http.ResponseWriter, r *http.Request) {
+func HandleGetMw2Power(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	var body struct {
 		PowerMW   string `json:"power_mW"`
@@ -198,7 +198,7 @@ func HandleGetMwPower(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]string{"power_factor": output[0]})
 }
 
-func HandleGetPowerMw(w http.ResponseWriter, r *http.Request) {
+func HandleGetPower2Mw(w http.ResponseWriter, r *http.Request) {
 	trxID, _ := strconv.Atoi(r.PathValue("trx_id"))
 	var body struct {
 		PowerFactor string `json:"power_factor"`
